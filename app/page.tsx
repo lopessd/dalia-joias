@@ -1,0 +1,115 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Gem, Eye, EyeOff } from "lucide-react"
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    // Simulate login process
+    setTimeout(() => {
+      if (email === "admin@joias.com") {
+        window.location.href = "/admin/dashboard"
+      } else if (email.includes("revendedor")) {
+        window.location.href = "/revendedor/dashboard"
+      } else {
+        alert("Credenciais inválidas")
+      }
+      setIsLoading(false)
+    }, 1000)
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
+            <Gem className="w-8 h-8 text-primary-foreground" />
+          </div>
+          <h1 className="text-3xl font-heading text-foreground mb-2">Sistema de Joias</h1>
+          <p className="text-muted-foreground font-body">Faça login para acessar sua conta</p>
+        </div>
+
+        <Card className="border-border shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-heading text-center">Login</CardTitle>
+            <CardDescription className="text-center font-body">
+              Digite suas credenciais para acessar o sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="font-body">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="font-body"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="font-body">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="font-body pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full font-body" disabled={isLoading}>
+                {isLoading ? "Entrando..." : "Entrar"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground font-body">Contas de teste:</p>
+              <div className="mt-2 space-y-1 text-xs text-muted-foreground font-body">
+                <p>Admin: admin@joias.com</p>
+                <p>Revendedor: revendedor@teste.com</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

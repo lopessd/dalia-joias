@@ -1,0 +1,161 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreVertical, Edit, Trash2, Calendar, Package, Gem, DollarSign, FileText } from "lucide-react"
+import { EditVendaDialog } from "./edit-venda-dialog"
+import { DeleteVendaDialog } from "./delete-venda-dialog"
+
+interface Produto {
+  id: string
+  nome: string
+  quantidade: number
+  precoUnitario: number
+}
+
+interface Venda {
+  id: string
+  data: string
+  valor: number
+  quantidadeProdutos: number
+  quantidadeJoias: number
+  observacoes: string
+  produtos: Produto[]
+}
+
+interface VendaCardProps {
+  venda: Venda
+}
+
+export function VendaCard({ venda }: VendaCardProps) {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("pt-BR")
+  }
+
+  return (
+    <>
+      <Card className="border-border hover:shadow-md transition-shadow">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-heading text-foreground text-lg">Venda #{venda.id}</h3>
+                <Badge variant="outline" className="text-xs font-body">
+                  {formatDate(venda.data)}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
+                <Calendar className="w-3 h-3" />
+                {formatDate(venda.data)}
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="font-body">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar Venda
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="font-body text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-4">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-body">Valor</span>
+                </div>
+                <p className="text-lg font-heading text-foreground">{formatCurrency(venda.valor)}</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Package className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-body">Produtos</span>
+                </div>
+                <p className="text-lg font-heading text-foreground">{venda.quantidadeProdutos}</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Gem className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-body">Joias</span>
+                </div>
+                <p className="text-lg font-heading text-foreground">{venda.quantidadeJoias}</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-body">Média</span>
+                </div>
+                <p className="text-lg font-heading text-foreground">
+                  {formatCurrency(venda.valor / venda.quantidadeJoias)}
+                </p>
+              </div>
+            </div>
+
+            {/* Products List */}
+            <div className="border-t border-border pt-4">
+              <h4 className="text-sm font-heading text-foreground mb-2">Produtos Vendidos</h4>
+              <div className="space-y-2">
+                {venda.produtos.map((produto) => (
+                  <div key={produto.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-body text-foreground">{produto.nome}</p>
+                      <p className="text-xs text-muted-foreground font-body">
+                        {produto.quantidade}x {formatCurrency(produto.precoUnitario)}
+                      </p>
+                    </div>
+                    <p className="text-sm font-heading text-foreground">
+                      {formatCurrency(produto.quantidade * produto.precoUnitario)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Observations */}
+            {venda.observacoes && (
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <h4 className="text-sm font-heading text-foreground">Observações</h4>
+                </div>
+                <p className="text-sm font-body text-muted-foreground">{venda.observacoes}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <EditVendaDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} venda={venda} />
+      <DeleteVendaDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} venda={venda} />
+    </>
+  )
+}
