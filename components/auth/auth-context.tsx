@@ -1,16 +1,18 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
+import type { User } from "@supabase/supabase-js"
 
-interface User {
+interface AuthUser {
   id: string
   email: string
-  name: string
-  type: "admin" | "revendedor"
+  role: "admin" | "revendedor"
 }
 
 interface AuthContextType {
-  user: User | null
+  user: AuthUser | null
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
@@ -19,56 +21,149 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+
+  const handleAuthUser = useCallback(async (supabaseUser: User) => {
+    try {
+      // Get user profile with role
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, role, created_at')
+        .eq('id', supabaseUser.id)
+        .single()
+
+      if (error) {
+        console.error('Error fetching profile:', error)
+        toast({
+          title: "Erro de autenticação",
+          description: "Não foi possível carregar o perfil do usuário",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+        return
+      }
+
+      if (profile && supabaseUser.email) {
+        const authUser: AuthUser = {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          role: profile.role === 'reseller' ? 'revendedor' : profile.role
+        }
+        setUser(authUser)
+      }
+    } catch (error) {
+      console.error('Error in handleAuthUser:', error)
+      toast({
+        title: "Erro de autenticação",
+        description: "Erro interno do sistema",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [toast])
 
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem("jewelry-user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setIsLoading(false)
-  }, [])
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleAuthUser(session.user)
+      } else {
+        setIsLoading(false)
+      }
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        await handleAuthUser(session.user)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setIsLoading(false)
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        await handleAuthUser(session.user)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [handleAuthUser])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
 
-    let userData: User | null = null
+      if (error) {
+        let errorMessage = "Erro de conexão. Tente novamente."
+        
+        switch (error.message) {
+          case 'Invalid login credentials':
+          case 'invalid_login_credentials':
+            errorMessage = "Email ou senha incorretos"
+            break
+          case 'Email not confirmed':
+            errorMessage = "Email não confirmado. Verifique sua caixa de entrada."
+            break
+          case 'Too many requests':
+          case 'too_many_requests':
+            errorMessage = "Muitas tentativas. Aguarde alguns minutos."
+            break
+          default:
+            if (error.message.includes('credentials') || error.message.includes('Invalid')) {
+              errorMessage = "Email ou senha incorretos"
+            }
+        }
 
-    if (email === "admin@joias.com" && password === "admin123") {
-      userData = {
-        id: "1",
-        email: "admin@joias.com",
-        name: "Administrador",
-        type: "admin",
+        toast({
+          title: "Erro no login",
+          description: errorMessage,
+          variant: "destructive",
+        })
+
+        setIsLoading(false)
+        return false
       }
-    } else if (email.includes("revendedor") && password === "revendedor123") {
-      userData = {
-        id: "2",
-        email: email,
-        name: "Revendedor Teste",
-        type: "revendedor",
-      }
-    }
 
-    if (userData) {
-      setUser(userData)
-      localStorage.setItem("jewelry-user", JSON.stringify(userData))
+      if (data.user) {
+        // handleAuthUser will be called via onAuthStateChange
+        toast({
+          title: "Sucesso",
+          description: "Login realizado com sucesso!",
+        })
+        return true
+      }
+
       setIsLoading(false)
-      return true
+      return false
+    } catch (error) {
+      console.error('Login error:', error)
+      toast({
+        title: "Erro no login",
+        description: "Erro de conexão. Tente novamente.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return false
     }
-
-    setIsLoading(false)
-    return false
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("jewelry-user")
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force local logout even if remote fails
+      setUser(null)
+    }
   }
 
   return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>

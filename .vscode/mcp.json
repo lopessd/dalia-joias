@@ -1,0 +1,19 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "supabase-access-token",
+      "description": "Supabase personal access token",
+      "password": true
+    }
+  ],
+  "servers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=eelizogeyrjjrfrximif"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_21c415462204d6fb25bd8f70f50d95a9e324f2a3"
+      }
+    }
+  }
+}
