@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, X } from "lucide-react"
+import { Upload, X, Settings } from "lucide-react"
 import { createProduct, addProductPhotos, handleSupabaseError, validateImageUrl } from '@/lib/products-api'
+import { getCategories } from '@/lib/categories-api'
 import { useToast } from '@/hooks/use-toast'
+import { CategoryManager } from './category-manager'
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Category } from '@/lib/supabase'
 
 interface CreateJoiaDialogProps {
@@ -29,6 +33,7 @@ interface CreateJoiaDialogProps {
 }
 
 export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: CreateJoiaDialogProps) {
+  const [localCategories, setLocalCategories] = useState<Category[]>(categories)
   const [formData, setFormData] = useState({
     code: "",
     category_id: "0",
@@ -39,6 +44,22 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
   const [fotos, setFotos] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  // Atualizar categorias locais quando as props mudarem
+  useEffect(() => {
+    setLocalCategories(categories)
+  }, [categories])
+
+  // Função para recarregar categorias
+  const handleCategoriesChange = async () => {
+    try {
+      const updatedCategories = await getCategories()
+      setLocalCategories(updatedCategories)
+      onSuccess() // Também atualiza as categorias na página principal
+    } catch (error) {
+      console.error('Erro ao recarregar categorias:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,7 +149,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Criar Nova Joia</DialogTitle>
           <DialogDescription className="font-body">
@@ -136,129 +157,158 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code" className="font-body">
-                Código da Joia *
-              </Label>
-              <Input
-                id="code"
-                placeholder="Ex: AN001"
-                value={formData.code}
-                onChange={(e) => handleInputChange("code", e.target.value)}
-                required
-                className="font-body"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-body">Categoria</Label>
-              <Select value={formData.category_id} onValueChange={(value) => handleInputChange("category_id", value)}>
-                <SelectTrigger className="font-body">
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Nenhuma categoria</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <Tabs defaultValue="joia" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="joia">Dados da Joia</TabsTrigger>
+            <TabsTrigger value="categorias">
+              <Settings className="w-4 h-4 mr-2" />
+              Gerenciar Categorias
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="name" className="font-body">
-              Nome *
-            </Label>
-            <Input
-              id="name"
-              placeholder="Ex: Anel de Ouro 18k"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              required
-              className="font-body"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cost_price" className="font-body">
-                Preço de Custo *
-              </Label>
-              <Input
-                id="cost_price"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                value={formData.cost_price}
-                onChange={(e) => handleInputChange("cost_price", e.target.value)}
-                required
-                className="font-body"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="selling_price" className="font-body">
-                Preço de Venda
-              </Label>
-              <Input
-                id="selling_price"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                value={formData.selling_price}
-                onChange={(e) => handleInputChange("selling_price", e.target.value)}
-                className="font-body"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-body">Fotos</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {fotos.map((foto, index) => (
-                <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden">
-                  <img
-                    src={foto || "/placeholder.svg"}
-                    alt={`Foto ${index + 1}`}
-                    className="w-full h-full object-cover"
+          <TabsContent value="joia" className="mt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="font-body">
+                    Código da Joia *
+                  </Label>
+                  <Input
+                    id="code"
+                    placeholder="Ex: AN001"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    required
+                    className="font-body"
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-1 right-1 h-6 w-6 p-0"
-                    onClick={() => removeFoto(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
                 </div>
-              ))}
-              {fotos.length < 4 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="aspect-square border-dashed font-body bg-transparent"
-                  onClick={addFoto}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground font-body">Adicione até 4 fotos da joia</p>
-          </div>
+                <div className="space-y-2">
+                  <Label className="font-body">Categoria</Label>
+                  <Select value={formData.category_id} onValueChange={(value) => handleInputChange("category_id", value)}>
+                    <SelectTrigger className="font-body">
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Nenhuma categoria</SelectItem>
+                      {localCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-body">
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading} className="font-body">
-              {isLoading ? "Criando..." : "Criar Joia"}
-            </Button>
-          </DialogFooter>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="name" className="font-body">
+                  Nome *
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="Ex: Anel de Ouro 18k"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  required
+                  className="font-body"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cost_price" className="font-body">
+                    Preço de Custo *
+                  </Label>
+                  <Input
+                    id="cost_price"
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={formData.cost_price}
+                    onChange={(e) => handleInputChange("cost_price", e.target.value)}
+                    required
+                    className="font-body"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="selling_price" className="font-body">
+                    Preço de Venda
+                  </Label>
+                  <Input
+                    id="selling_price"
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={formData.selling_price}
+                    onChange={(e) => handleInputChange("selling_price", e.target.value)}
+                    className="font-body"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-body">Fotos</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {fotos.map((foto, index) => (
+                    <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+                      <img
+                        src={foto || "/placeholder.svg"}
+                        alt={`Foto ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                        onClick={() => removeFoto(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {fotos.length < 4 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="aspect-square border-dashed font-body bg-transparent"
+                      onClick={addFoto}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground font-body">Adicione até 4 fotos da joia</p>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-body">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading} className="font-body">
+                  {isLoading ? "Criando..." : "Criar Joia"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="categorias" className="mt-6">
+            <CategoryManager 
+              categories={localCategories} 
+              onCategoriesChange={handleCategoriesChange} 
+            />
+            <Separator className="my-4" />
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => onOpenChange(false)} 
+                className="font-body"
+              >
+                Fechar
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )
