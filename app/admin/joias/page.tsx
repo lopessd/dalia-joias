@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,53 +12,17 @@ import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign } from "luci
 import { JoiaCard } from "@/components/joias/joia-card"
 import { CreateJoiaDialog } from "@/components/joias/create-joia-dialog"
 import { TransactionCard } from "@/components/joias/transaction-card"
+import { getProductsWithDetails, getCategories } from '@/lib/products-api'
+import { useToast } from '@/hooks/use-toast'
+import type { ProductWithDetails, Category } from '@/lib/supabase'
 
-// Mock data
-const mockJoias = [
-  {
-    id: "J001",
-    codigo: "AN001",
-    nome: "Anel de Ouro 18k",
-    categoria: "Anéis",
-    descricao: "Anel clássico em ouro 18k com acabamento polido",
-    precoCusto: 450.0,
-    precoVenda: 680.0,
-    quantidade: 15,
-    status: "ativo",
-    fotos: ["/anel-ouro.png"],
-  },
-  {
-    id: "J002",
-    codigo: "BR002",
-    nome: "Brincos de Prata",
-    categoria: "Brincos",
-    descricao: "Brincos delicados em prata 925 com zircônias",
-    precoCusto: 120.0,
-    precoVenda: 180.0,
-    quantidade: 8,
-    status: "ativo",
-    fotos: ["/brincos-prata.png"],
-  },
-  {
-    id: "J003",
-    codigo: "CO003",
-    nome: "Colar de Pérolas",
-    categoria: "Colares",
-    descricao: "Colar elegante com pérolas naturais",
-    precoCusto: 280.0,
-    precoVenda: 420.0,
-    quantidade: 3,
-    status: "baixo_estoque",
-    fotos: ["/colar-perolas.png"],
-  },
-]
-
+// Mock data para transações (mantido temporariamente)
 const mockTransactions = [
   {
     id: "T001",
     joiaId: "J001",
     joiaNome: "Anel de Ouro 18k",
-    tipo: "entrada",
+    tipo: "entrada" as const,
     quantidade: 10,
     motivo: "Compra de fornecedor",
     data: "2024-01-15",
@@ -68,7 +32,7 @@ const mockTransactions = [
     id: "T002",
     joiaId: "J002",
     joiaNome: "Brincos de Prata",
-    tipo: "saida",
+    tipo: "saida" as const,
     quantidade: 2,
     motivo: "Venda para revendedor",
     data: "2024-01-14",
@@ -78,7 +42,7 @@ const mockTransactions = [
     id: "T003",
     joiaId: "J003",
     joiaNome: "Colar de Pérolas",
-    tipo: "envio",
+    tipo: "envio" as const,
     quantidade: 1,
     motivo: "Mostruário para Maria Silva",
     data: "2024-01-13",
@@ -87,6 +51,9 @@ const mockTransactions = [
 ]
 
 export default function JoiasPage() {
+  const [products, setProducts] = useState<ProductWithDetails[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("todas")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -96,14 +63,43 @@ export default function JoiasPage() {
     motivo: "",
     tipo: "todos",
   })
+  const { toast } = useToast()
 
-  const categories = ["Anéis", "Brincos", "Colares", "Pulseiras", "Relógios"]
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  const filteredJoias = mockJoias.filter((joia) => {
+  const loadData = async () => {
+    try {
+      setIsLoading(true)
+      const [productsData, categoriesData] = await Promise.all([
+        getProductsWithDetails(),
+        getCategories()
+      ])
+      setProducts(productsData)
+      setCategories(categoriesData)
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados. Tente novamente.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Função callback para recarregar dados após mudanças
+  const handleDataChange = () => {
+    loadData()
+  }
+
+  // Filtros de produtos
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      joia.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      joia.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "todas" || joia.categoria === selectedCategory
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.code.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "todas" || product.category?.name === selectedCategory
     return matchesSearch && matchesCategory
   })
 
@@ -113,16 +109,37 @@ export default function JoiasPage() {
     return matchesMotivo && matchesTipo
   })
 
-  const totalPecas = mockJoias.reduce((sum, joia) => sum + joia.quantidade, 0)
-  const valorTotalEstoque = mockJoias.reduce((sum, joia) => sum + joia.quantidade * joia.precoVenda, 0)
-  const joisasAtivas = mockJoias.filter((joia) => joia.status === "ativo").length
-  const joisasBaixoEstoque = mockJoias.filter((joia) => joia.status === "baixo_estoque").length
+  // Cálculos dos KPIs
+  const totalPecas = products.length
+  const valorTotalEstoque = products.reduce((sum, product) => {
+    return sum + (product.selling_price || product.cost_price)
+  }, 0)
+  const joisasAtivas = products.filter((product) => product.active).length
+  const joisasBaixoEstoque = 0 // Por enquanto, sem lógica de estoque
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar userType="admin" />
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando joias...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -235,8 +252,8 @@ export default function JoiasPage() {
                         <SelectContent>
                           <SelectItem value="todas">Todas as categorias</SelectItem>
                           {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -260,12 +277,12 @@ export default function JoiasPage() {
 
               {/* Joias Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredJoias.map((joia) => (
-                  <JoiaCard key={joia.id} joia={joia} />
+                {filteredProducts.map((product) => (
+                  <JoiaCard key={product.id} joia={product} onDataChange={handleDataChange} />
                 ))}
               </div>
 
-              {filteredJoias.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <Card className="border-border">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Gem className="w-12 h-12 text-muted-foreground mb-4" />
@@ -389,7 +406,12 @@ export default function JoiasPage() {
         </div>
       </main>
 
-      <CreateJoiaDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateJoiaDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        categories={categories}
+        onSuccess={handleDataChange}
+      />
     </div>
   )
 }

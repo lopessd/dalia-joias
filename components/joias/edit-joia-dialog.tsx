@@ -14,69 +14,112 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, X } from "lucide-react"
-
-interface Joia {
-  id: string
-  codigo: string
-  nome: string
-  categoria: string
-  descricao: string
-  precoCusto: number
-  precoVenda: number
-  quantidade: number
-  status: string
-  fotos: string[]
-}
+import { updateProduct, deleteProductPhotos, addProductPhotos, getCategories, handleSupabaseError, validateImageUrl } from '@/lib/products-api'
+import { useToast } from '@/hooks/use-toast'
+import type { ProductWithDetails, Category } from '@/lib/supabase'
 
 interface EditJoiaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  joia: Joia
+  joia: ProductWithDetails
+  onSuccess?: () => void
 }
 
-export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps) {
+export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoiaDialogProps) {
   const [formData, setFormData] = useState({
-    codigo: "",
-    categoria: "",
-    nome: "",
-    descricao: "",
-    precoCusto: "",
-    precoVenda: "",
-    status: "ativo",
+    code: "",
+    category_id: "",
+    name: "",
+    cost_price: "",
+    selling_price: "",
   })
   const [fotos, setFotos] = useState<string[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [fotosChanged, setFotosChanged] = useState(false)
+  const { toast } = useToast()
 
-  const categories = ["Anéis", "Brincos", "Colares", "Pulseiras", "Relógios"]
+  useEffect(() => {
+    loadCategories()
+  }, [])
 
   useEffect(() => {
     if (joia) {
       setFormData({
-        codigo: joia.codigo,
-        categoria: joia.categoria,
-        nome: joia.nome,
-        descricao: joia.descricao,
-        precoCusto: joia.precoCusto.toString(),
-        precoVenda: joia.precoVenda.toString(),
-        status: joia.status,
+        code: joia.code,
+        category_id: joia.category?.id.toString() || "0",
+        name: joia.name,
+        cost_price: joia.cost_price.toString(),
+        selling_price: joia.selling_price?.toString() || "",
       })
-      setFotos(joia.fotos)
+      setFotos(joia.photos.map(p => p.image))
+      setFotosChanged(false)
     }
   }, [joia])
+
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await getCategories()
+      setCategories(categoriesData)
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Joia editada:", { ...formData, fotos })
-      setIsLoading(false)
+    try {
+      // Validar campos obrigatórios
+      if (!formData.code || !formData.name || !formData.cost_price) {
+        toast({
+          title: "Erro",
+          description: "Preencha todos os campos obrigatórios",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Atualizar produto
+      await updateProduct(joia.id, {
+        code: formData.code,
+        name: formData.name,
+        cost_price: Number(formData.cost_price),
+        selling_price: formData.selling_price ? Number(formData.selling_price) : null,
+        category_id: formData.category_id === "0" ? null : Number(formData.category_id)
+      })
+
+      // Gerenciar fotos (deletar antigas e adicionar novas se mudaram)
+      if (fotosChanged) {
+        await deleteProductPhotos(joia.id)
+        if (fotos.length > 0) {
+          await addProductPhotos(joia.id, fotos)
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Joia atualizada com sucesso!",
+        variant: "default"
+      })
+
       onOpenChange(false)
-    }, 1000)
+      if (onSuccess) onSuccess()
+
+    } catch (error: any) {
+      console.error('Erro ao atualizar joia:', error)
+      const errorMessage = handleSupabaseError(error)
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -84,12 +127,22 @@ export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps
   }
 
   const addFoto = () => {
-    const newFoto = `/placeholder.svg?height=200&width=200&query=joia-${fotos.length + 1}`
-    setFotos((prev) => [...prev, newFoto])
+    const url = prompt("Digite a URL da imagem:")
+    if (url && validateImageUrl(url)) {
+      setFotos((prev) => [...prev, url])
+      setFotosChanged(true)
+    } else if (url) {
+      toast({
+        title: "URL inválida",
+        description: "Por favor, insira uma URL de imagem válida",
+        variant: "destructive"
+      })
+    }
   }
 
   const removeFoto = (index: number) => {
     setFotos((prev) => prev.filter((_, i) => i !== index))
+    setFotosChanged(true)
   }
 
   return (
@@ -105,21 +158,22 @@ export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="codigo" className="font-body">
+              <Label htmlFor="code" className="font-body">
                 Código da Joia
               </Label>
-              <Input id="codigo" value={formData.codigo} disabled className="font-body bg-muted" />
+              <Input id="code" value={formData.code} disabled className="font-body bg-muted" />
             </div>
             <div className="space-y-2">
-              <Label className="font-body">Categoria *</Label>
-              <Select value={formData.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
+              <Label className="font-body">Categoria</Label>
+              <Select value={formData.category_id} onValueChange={(value) => handleInputChange("category_id", value)}>
                 <SelectTrigger className="font-body">
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Nenhuma categoria</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -128,29 +182,15 @@ export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nome" className="font-body">
+            <Label htmlFor="name" className="font-body">
               Nome *
             </Label>
             <Input
-              id="nome"
+              id="name"
               placeholder="Ex: Anel de Ouro 18k"
-              value={formData.nome}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               required
-              className="font-body"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descricao" className="font-body">
-              Descrição
-            </Label>
-            <Textarea
-              id="descricao"
-              placeholder="Descreva as características da joia..."
-              value={formData.descricao}
-              onChange={(e) => handleInputChange("descricao", e.target.value)}
-              rows={3}
               className="font-body"
             />
           </div>
@@ -165,8 +205,8 @@ export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps
                 type="number"
                 step="0.01"
                 placeholder="0,00"
-                value={formData.precoCusto}
-                onChange={(e) => handleInputChange("precoCusto", e.target.value)}
+                value={formData.cost_price}
+                onChange={(e) => handleInputChange("cost_price", e.target.value)}
                 required
                 className="font-body"
               />
@@ -180,26 +220,11 @@ export function EditJoiaDialog({ open, onOpenChange, joia }: EditJoiaDialogProps
                 type="number"
                 step="0.01"
                 placeholder="0,00"
-                value={formData.precoVenda}
-                onChange={(e) => handleInputChange("precoVenda", e.target.value)}
-                required
+                value={formData.selling_price}
+                onChange={(e) => handleInputChange("selling_price", e.target.value)}
                 className="font-body"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-body">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-              <SelectTrigger className="font-body">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="baixo_estoque">Baixo Estoque</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
