@@ -13,6 +13,7 @@ import { JoiaCard } from "@/components/joias/joia-card"
 import { CreateJoiaDialog } from "@/components/joias/create-joia-dialog"
 import { TransactionCard } from "@/components/joias/transaction-card"
 import { getProductsWithDetails, getCategories } from '@/lib/products-api'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import type { ProductWithDetails, Category } from '@/lib/supabase'
 
@@ -67,6 +68,32 @@ export default function JoiasPage() {
 
   useEffect(() => {
     loadData()
+
+    // Subscrição em tempo real para manter a UI sincronizada com o banco
+    // Escuta mudanças nas tabelas relevantes e recarrega os dados quando ocorrerem
+    const channel = supabase
+      .channel('public:joias')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_photos' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      // Remove a assinatura ao desmontar
+      try {
+        supabase.removeChannel(channel)
+      } catch (err) {
+        // fallback: tentar unsubscribe direto
+        // @ts-ignore
+        channel.unsubscribe?.()
+      }
+    }
   }, [])
 
   const loadData = async () => {
@@ -115,7 +142,6 @@ export default function JoiasPage() {
     return sum + (product.selling_price || product.cost_price)
   }, 0)
   const joisasAtivas = products.filter((product) => product.active).length
-  const joisasBaixoEstoque = 0 // Por enquanto, sem lógica de estoque
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -172,8 +198,8 @@ export default function JoiasPage() {
 
             <TabsContent value="estoque" className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="border-border">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 justify-items-center">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Total de Peças</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
@@ -184,7 +210,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Valor Total</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -195,7 +221,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Joias Ativas</CardTitle>
                     <Gem className="h-4 w-4 text-muted-foreground" />
@@ -206,16 +232,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border border-orange-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-body text-muted-foreground">Baixo Estoque</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-orange-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-heading text-orange-600">{joisasBaixoEstoque}</div>
-                    <p className="text-xs text-orange-600 font-body">precisam reposição</p>
-                  </CardContent>
-                </Card>
+                {/* Baixo Estoque removido conforme solicitado */}
               </div>
 
               {/* Filters */}
