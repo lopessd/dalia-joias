@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign, ArrowUp, ArrowDown } from "lucide-react"
+import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign, X, ArrowUp, ArrowDown } from "lucide-react"
 import { JoiaCard } from "@/components/joias/joia-card"
 import { CreateJoiaDialog } from "@/components/joias/create-joia-dialog"
 import { TransactionCard } from "@/components/joias/transaction-card"
@@ -102,6 +102,25 @@ export default function JoiasPage() {
   // Função callback para recarregar dados após mudanças
   const handleDataChange = () => {
     loadData()
+  }
+
+  // Funções para controle dos filtros
+  const clearAllFilters = () => {
+    setTransactionFilters({
+      dataInicio: "",
+      dataFim: "",
+      motivo: "",
+      tipo: "todos",
+    })
+  }
+
+  const hasActiveFilters = () => {
+    return (
+      transactionFilters.dataInicio !== "" ||
+      transactionFilters.dataFim !== "" ||
+      transactionFilters.motivo !== "" ||
+      transactionFilters.tipo !== "todos"
+    )
   }
 
   // Filtros de produtos
@@ -375,7 +394,7 @@ export default function JoiasPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dataInicio" className="font-body">
                         Data Início
@@ -448,6 +467,18 @@ export default function JoiasPage() {
                           <SelectItem value="envio">Envio</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-body">Ações</Label>
+                      <Button
+                        variant="outline"
+                        onClick={clearAllFilters}
+                        className="w-full font-body gap-2"
+                        disabled={!hasActiveFilters()}
+                      >
+                        <X className="w-4 h-4" />
+                        Limpar Filtros
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

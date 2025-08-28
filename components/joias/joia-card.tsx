@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreVertical, Edit, Trash2, Plus, Minus, Send } from "lucide-react"
+import { MoreVertical, Edit, Trash2, Plus, Minus, Send, Package } from "lucide-react"
 import { EditJoiaDialog } from "./edit-joia-dialog"
 import { StockMovementDialog } from "./stock-movement-dialog"
+import { StockManagementDialog } from "./stock-management-dialog"
 import { DeleteJoiaDialog } from "./delete-joia-dialog"
 import type { ProductWithDetails, Category } from "@/lib/supabase"
 
@@ -20,6 +21,7 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isStockDialogOpen, setIsStockDialogOpen] = useState(false)
+  const [isStockManagementDialogOpen, setIsStockManagementDialogOpen] = useState(false)
   const [stockMovementType, setStockMovementType] = useState<"entrada" | "saida" | "envio">("entrada")
 
   const formatCurrency = (value: number) => {
@@ -70,17 +72,12 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
                   <Edit className="mr-2 h-4 w-4" />
                   Editar Joia
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStockMovement("entrada")} className="font-body">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Entrada
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStockMovement("saida")} className="font-body">
-                  <Minus className="mr-2 h-4 w-4" />
-                  Saída
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStockMovement("envio")} className="font-body">
-                  <Send className="mr-2 h-4 w-4" />
-                  Envio
+                <DropdownMenuItem 
+                  onClick={() => setIsStockManagementDialogOpen(true)} 
+                  className="font-body"
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Gerenciar Estoque
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setIsDeleteDialogOpen(true)}
@@ -135,6 +132,12 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
         onOpenChange={setIsStockDialogOpen}
         joia={joia}
         type={stockMovementType}
+        onSuccess={onDataChange}
+      />
+      <StockManagementDialog
+        open={isStockManagementDialogOpen}
+        onOpenChange={setIsStockManagementDialogOpen}
+        joia={joia}
         onSuccess={onDataChange}
       />
     </>
