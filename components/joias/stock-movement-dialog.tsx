@@ -16,31 +16,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Minus, Send } from "lucide-react"
-
-interface Joia {
-  id: string
-  codigo: string
-  nome: string
-  categoria: string
-  descricao: string
-  precoCusto: number
-  precoVenda: number
-  quantidade: number
-  status: string
-  fotos: string[]
-}
+import { createInventoryMovement } from "@/lib/inventory-api"
+import { useToast } from "@/hooks/use-toast"
+import type { ProductWithDetails } from '@/lib/supabase'
 
 interface StockMovementDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  joia: Joia
+  joia: ProductWithDetails
   type: "entrada" | "saida" | "envio"
+  onSuccess?: () => void // Callback para recarregar dados
 }
 
-export function StockMovementDialog({ open, onOpenChange, joia, type }: StockMovementDialogProps) {
+export function StockMovementDialog({ open, onOpenChange, joia, type, onSuccess }: StockMovementDialogProps) {
   const [quantidade, setQuantidade] = useState("")
   const [motivo, setMotivo] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   const getTitle = () => {
     switch (type) {
@@ -85,19 +77,45 @@ export function StockMovementDialog({ open, onOpenChange, joia, type }: StockMov
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Movimentação registrada:", {
-        joiaId: joia.id,
-        type,
-        quantidade: Number.parseInt(quantidade),
-        motivo,
+    try {
+      const quantidadeNum = Number.parseInt(quantidade)
+      
+      // Determinar quantidade final baseada no tipo
+      let quantidadeFinal = quantidadeNum
+      if (type === "saida" || type === "envio") {
+        quantidadeFinal = -quantidadeNum // Negativo para saídas
+      }
+
+      await createInventoryMovement({
+        product_id: Number(joia.id),
+        quantity: quantidadeFinal,
+        reason: motivo
       })
-      setIsLoading(false)
+
+      toast({
+        title: "Sucesso",
+        description: `${type === 'entrada' ? 'Entrada' : type === 'saida' ? 'Saída' : 'Envio'} registrada com sucesso!`,
+      })
+
       onOpenChange(false)
       setQuantidade("")
       setMotivo("")
-    }, 1000)
+      
+      // Chamar callback para recarregar dados
+      if (onSuccess) {
+        onSuccess()
+      }
+      
+    } catch (error) {
+      console.error('Erro ao registrar movimentação:', error)
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar movimentação. Tente novamente.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -113,9 +131,8 @@ export function StockMovementDialog({ open, onOpenChange, joia, type }: StockMov
 
         <div className="space-y-4">
           <div className="p-4 bg-muted rounded-lg">
-            <h4 className="font-heading text-sm text-foreground mb-2">{joia.nome}</h4>
-            <p className="text-xs text-muted-foreground font-body">Código: {joia.codigo}</p>
-            <p className="text-xs text-muted-foreground font-body">Estoque atual: {joia.quantidade} unidades</p>
+            <h4 className="font-heading text-sm text-foreground mb-2">{joia.name}</h4>
+            <p className="text-xs text-muted-foreground font-body">Código: {joia.code}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,16 +144,12 @@ export function StockMovementDialog({ open, onOpenChange, joia, type }: StockMov
                 id="quantidade"
                 type="number"
                 min="1"
-                max={type === "saida" || type === "envio" ? joia.quantidade : undefined}
                 placeholder="Digite a quantidade"
                 value={quantidade}
                 onChange={(e) => setQuantidade(e.target.value)}
                 required
                 className="font-body"
               />
-              {(type === "saida" || type === "envio") && (
-                <p className="text-xs text-muted-foreground font-body">Máximo: {joia.quantidade} unidades</p>
-              )}
             </div>
 
             <div className="space-y-2">

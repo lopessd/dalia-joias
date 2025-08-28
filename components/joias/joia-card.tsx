@@ -130,12 +130,13 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
         joia={joia}
         onSuccess={onDataChange}
       />
-      {/* <StockMovementDialog
+      <StockMovementDialog
         open={isStockDialogOpen}
         onOpenChange={setIsStockDialogOpen}
         joia={joia}
         type={stockMovementType}
-      /> */}
+        onSuccess={onDataChange}
+      />
     </>
   )
 }

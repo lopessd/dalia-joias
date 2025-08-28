@@ -8,52 +8,27 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign } from "lucide-react"
+import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign, ArrowUp, ArrowDown } from "lucide-react"
 import { JoiaCard } from "@/components/joias/joia-card"
 import { CreateJoiaDialog } from "@/components/joias/create-joia-dialog"
 import { TransactionCard } from "@/components/joias/transaction-card"
 import { getProductsWithDetails, getCategories } from '@/lib/products-api'
+import { getInventoryMovements, getInventoryMovementsFiltered, getInventoryStats } from '@/lib/inventory-api'
+import type { InventoryMovement } from '@/lib/inventory-api'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import type { ProductWithDetails, Category } from '@/lib/supabase'
 
-// Mock data para transações (mantido temporariamente)
-const mockTransactions = [
-  {
-    id: "T001",
-    joiaId: "J001",
-    joiaNome: "Anel de Ouro 18k",
-    tipo: "entrada" as const,
-    quantidade: 10,
-    motivo: "Compra de fornecedor",
-    data: "2024-01-15",
-    valor: 4500.0,
-  },
-  {
-    id: "T002",
-    joiaId: "J002",
-    joiaNome: "Brincos de Prata",
-    tipo: "saida" as const,
-    quantidade: 2,
-    motivo: "Venda para revendedor",
-    data: "2024-01-14",
-    valor: 360.0,
-  },
-  {
-    id: "T003",
-    joiaId: "J003",
-    joiaNome: "Colar de Pérolas",
-    tipo: "envio" as const,
-    quantidade: 1,
-    motivo: "Mostruário para Maria Silva",
-    data: "2024-01-13",
-    valor: 420.0,
-  },
-]
-
 export default function JoiasPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [movements, setMovements] = useState<InventoryMovement[]>([])
+  const [historyStats, setHistoryStats] = useState({
+    totalMovements: 0,
+    totalEntries: 0,
+    totalExits: 0,
+    recentMovements: 0
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("todas")
@@ -82,6 +57,10 @@ export default function JoiasPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
         loadData()
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_movements' }, () => {
+        // ADICIONAR: Recarregar quando houver mudanças nas movimentações
+        loadData()
+      })
       .subscribe()
 
     return () => {
@@ -99,12 +78,16 @@ export default function JoiasPage() {
   const loadData = async () => {
     try {
       setIsLoading(true)
-      const [productsData, categoriesData] = await Promise.all([
+      const [productsData, categoriesData, movementsData, statsData] = await Promise.all([
         getProductsWithDetails(),
-        getCategories()
+        getCategories(),
+        getInventoryMovements(),
+        getInventoryStats()
       ])
       setProducts(productsData)
       setCategories(categoriesData)
+      setMovements(movementsData)
+      setHistoryStats(statsData)
     } catch (error) {
       toast({
         title: "Erro",
@@ -130,10 +113,33 @@ export default function JoiasPage() {
     return matchesSearch && matchesCategory
   })
 
-  const filteredTransactions = mockTransactions.filter((transaction) => {
-    const matchesMotivo = transaction.motivo.toLowerCase().includes(transactionFilters.motivo.toLowerCase())
-    const matchesTipo = transactionFilters.tipo === "todos" || transaction.tipo === transactionFilters.tipo
-    return matchesMotivo && matchesTipo
+  const filteredMovements = movements.filter((movement) => {
+    const matchesMotivo = movement.reason.toLowerCase().includes(transactionFilters.motivo.toLowerCase())
+    
+    let matchesTipo = true
+    if (transactionFilters.tipo === 'entrada') {
+      matchesTipo = movement.quantity > 0
+    } else if (transactionFilters.tipo === 'saida') {
+      matchesTipo = movement.quantity < 0
+    }
+    
+    // Filtros de data
+    let matchesDate = true
+    if (transactionFilters.dataInicio || transactionFilters.dataFim) {
+      const movementDate = new Date(movement.created_at)
+      
+      if (transactionFilters.dataInicio) {
+        const startDate = new Date(transactionFilters.dataInicio)
+        matchesDate = matchesDate && movementDate >= startDate
+      }
+      
+      if (transactionFilters.dataFim) {
+        const endDate = new Date(transactionFilters.dataFim + 'T23:59:59')
+        matchesDate = matchesDate && movementDate <= endDate
+      }
+    }
+    
+    return matchesMotivo && matchesTipo && matchesDate
   })
 
   // Cálculos dos KPIs
@@ -313,6 +319,53 @@ export default function JoiasPage() {
             </TabsContent>
 
             <TabsContent value="historico" className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Total Movimentações</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalMovements}</div>
+                    <p className="text-xs text-muted-foreground font-body">registros</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Entradas</CardTitle>
+                    <ArrowUp className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalEntries}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Saídas</CardTitle>
+                    <ArrowDown className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalExits}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Últimos 7 dias</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.recentMovements}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Transaction Filters */}
               <Card className="border-border">
                 <CardHeader>
@@ -402,18 +455,21 @@ export default function JoiasPage() {
 
               {/* Transactions List */}
               <div className="space-y-4">
-                {filteredTransactions.map((transaction) => (
-                  <TransactionCard key={transaction.id} transaction={transaction} />
+                {filteredMovements.map((movement) => (
+                  <TransactionCard key={movement.id} movement={movement} />
                 ))}
               </div>
 
-              {filteredTransactions.length === 0 && (
+              {filteredMovements.length === 0 && (
                 <Card className="border-border">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Package className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma transação encontrada</h3>
+                    <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma movimentação encontrada</h3>
                     <p className="text-muted-foreground font-body text-center">
-                      Tente ajustar os filtros para ver as transações.
+                      {movements.length === 0 
+                        ? "Ainda não há movimentações registradas no sistema."
+                        : "Tente ajustar os filtros para ver as movimentações."
+                      }
                     </p>
                   </CardContent>
                 </Card>
