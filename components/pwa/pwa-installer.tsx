@@ -27,14 +27,23 @@ export function PWAInstaller() {
       if (window.matchMedia('(display-mode: standalone)').matches) {
         console.log('PWA: App is already installed')
         setIsInstalled(true)
+        return true
       } else {
         console.log('PWA: App is not installed')
+        return false
       }
     }
 
-    checkIfInstalled()
+    const isInstalled = checkIfInstalled()
 
-    // Listen for beforeinstallprompt event
+    // Detect iOS Safari
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const isIOSSafari = isIOS && isSafari
+
+    console.log('PWA: Platform detection:', { isIOS, isSafari, isIOSSafari })
+
+    // Listen for beforeinstallprompt event (Chrome/Edge only)
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       console.log('PWA: beforeinstallprompt event fired')
       e.preventDefault()
@@ -46,7 +55,7 @@ export function PWAInstaller() {
         setTimeout(() => {
           console.log('PWA: Showing install prompt')
           setShowInstallPrompt(true)
-        }, 3000) // Reduced to 3 seconds for testing
+        }, 3000)
       }
     }
 
@@ -73,26 +82,50 @@ export function PWAInstaller() {
         })
     }
 
-    // For development: Show install prompt after delay even if beforeinstallprompt doesn't fire
-    const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
-    if (isDevelopment && !isInstalled) {
-      console.log('PWA: Development mode - showing install prompt after 5 seconds regardless of beforeinstallprompt')
-      setTimeout(() => {
-        if (!isInstalled && !sessionStorage.getItem('pwa-install-dismissed')) {
-          console.log('PWA: Development mode - forcing install prompt')
+    // Show install prompt based on platform
+    if (!isInstalled && !sessionStorage.getItem('pwa-install-dismissed')) {
+      if (isIOSSafari) {
+        // iOS Safari - show instructions immediately after delay
+        console.log('PWA: iOS Safari detected - showing install instructions after 5 seconds')
+        setTimeout(() => {
           setShowInstallPrompt(true)
+        }, 5000)
+      } else {
+        // Other browsers - show after longer delay if beforeinstallprompt doesn't fire
+        const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
+        const isHTTPS = window.location.protocol === 'https:' || isDevelopment
+        
+        console.log('PWA: Environment check:', { isDevelopment, isHTTPS })
+        
+        if (isHTTPS) {
+          setTimeout(() => {
+            if (!isInstalled && !sessionStorage.getItem('pwa-install-dismissed') && !deferredPrompt) {
+              console.log('PWA: Fallback - showing install prompt (beforeinstallprompt may not have fired)')
+              setShowInstallPrompt(true)
+            }
+          }, 8000) // Wait longer for beforeinstallprompt
         }
-      }, 5000)
+      }
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener)
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
-  }, [isInstalled])
+  }, [])
 
   const handleInstallClick = async () => {
+    console.log('PWA: Install button clicked')
+    
+    // Detect platform
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const isChrome = /chrome/i.test(navigator.userAgent)
+    
+    console.log('PWA: Platform detection on install:', { isIOS, isSafari, isChrome })
+
     if (deferredPrompt) {
+      console.log('PWA: Using deferred prompt to install')
       try {
         await deferredPrompt.prompt()
         const choiceResult = await deferredPrompt.userChoice
@@ -101,6 +134,7 @@ export function PWAInstaller() {
         
         if (choiceResult.outcome === 'accepted') {
           console.log('PWA: User accepted the install prompt')
+          setIsInstalled(true)
         } else {
           console.log('PWA: User dismissed the install prompt')
         }
@@ -111,10 +145,24 @@ export function PWAInstaller() {
         console.error('PWA: Error during installation:', error)
       }
     } else {
-      // Fallback for development or browsers that don't support beforeinstallprompt
-      console.log('PWA: No deferred prompt available - showing instructions')
-      alert('Para instalar o app:\n\nChrome: Menu > Instalar app\nSafari: Compartilhar > Adicionar à Tela Inicial\nFirefox: Menu > Instalar')
+      // Show platform-specific instructions
+      console.log('PWA: No deferred prompt available - showing platform-specific instructions')
+      
+      let instructions = 'Para instalar o app:\n\n'
+      
+      if (isIOS && isSafari) {
+        instructions += '📱 Safari iOS:\n1. Toque no botão "Compartilhar" (📤)\n2. Role para baixo e toque em "Adicionar à Tela Inicial"\n3. Toque em "Adicionar"'
+      } else if (isIOS && isChrome) {
+        instructions += '📱 Chrome iOS:\n1. Toque no menu (⋮) no canto superior direito\n2. Toque em "Adicionar à tela inicial"\n3. Toque em "Adicionar"'
+      } else if (isChrome) {
+        instructions += '💻 Chrome:\n1. Clique no menu (⋮) no canto superior direito\n2. Clique em "Instalar Dália Joias..."\n3. Clique em "Instalar"'
+      } else {
+        instructions += '🌐 Outros navegadores:\nProcure por "Instalar app" ou "Adicionar à tela inicial" no menu do navegador'
+      }
+      
+      alert(instructions)
       setShowInstallPrompt(false)
+      sessionStorage.setItem('pwa-install-dismissed', 'true')
     }
   }
 
@@ -124,13 +172,18 @@ export function PWAInstaller() {
     sessionStorage.setItem('pwa-install-dismissed', 'true')
   }
 
-  // Don't show if already installed or dismissed in this session
-  if (isInstalled || !showInstallPrompt || !deferredPrompt) {
+  // Don't show if already installed
+  if (isInstalled) {
     return null
   }
 
   // Check if user already dismissed in this session
   if (typeof window !== 'undefined' && sessionStorage.getItem('pwa-install-dismissed')) {
+    return null
+  }
+
+  // Show install prompt if conditions are met
+  if (!showInstallPrompt) {
     return null
   }
 
@@ -153,7 +206,21 @@ export function PWAInstaller() {
             </Button>
           </div>
           <CardDescription className="text-xs">
-            Instale o Dalia Joyas para acesso rápido e use offline
+            {(() => {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+              const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+              const isChrome = /chrome/i.test(navigator.userAgent)
+              
+              if (isIOS && isSafari) {
+                return "Toque em Compartilhar (📤) → 'Adicionar à Tela Inicial'"
+              } else if (isIOS && isChrome) {
+                return "Toque no menu (⋮) → 'Adicionar à tela inicial'"
+              } else if (deferredPrompt) {
+                return "Instale o app para acesso rápido e use offline"
+              } else {
+                return "Procure 'Instalar app' no menu do navegador"
+              }
+            })()}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
@@ -163,7 +230,20 @@ export function PWAInstaller() {
             size="sm"
           >
             <Download className="h-4 w-4" />
-            Instalar Aplicativo
+            {(() => {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+              const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+              
+              if (deferredPrompt) {
+                return "Instalar Aplicativo"
+              } else if (isIOS && isSafari) {
+                return "Ver Instruções"
+              } else if (isIOS) {
+                return "Ver Instruções"
+              } else {
+                return "Como Instalar"
+              }
+            })()}
           </Button>
         </CardContent>
       </Card>
