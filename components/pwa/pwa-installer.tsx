@@ -39,9 +39,10 @@ export function PWAInstaller() {
     // Detect iOS Safari
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    const isIOSSafari = isIOS && isSafari
+    const isChrome = /chrome/i.test(navigator.userAgent)
+    const isIOSSafari = isIOS && isSafari && !isChrome
 
-    console.log('PWA: Platform detection:', { isIOS, isSafari, isIOSSafari })
+    console.log('PWA: Platform detection:', { isIOS, isSafari, isChrome, isIOSSafari })
 
     // Listen for beforeinstallprompt event (Chrome/Edge only)
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
@@ -91,7 +92,7 @@ export function PWAInstaller() {
           setShowInstallPrompt(true)
         }, 5000)
       } else {
-        // Other browsers - show after longer delay if beforeinstallprompt doesn't fire
+        // Other browsers (including Chrome iOS) - show after longer delay if beforeinstallprompt doesn't fire
         const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
         const isHTTPS = window.location.protocol === 'https:' || isDevelopment
         
@@ -121,8 +122,9 @@ export function PWAInstaller() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     const isChrome = /chrome/i.test(navigator.userAgent)
+    const isIOSSafari = isIOS && isSafari && !isChrome
     
-    console.log('PWA: Platform detection on install:', { isIOS, isSafari, isChrome })
+    console.log('PWA: Platform detection on install:', { isIOS, isSafari, isChrome, isIOSSafari })
 
     if (deferredPrompt) {
       console.log('PWA: Using deferred prompt to install')
@@ -150,7 +152,7 @@ export function PWAInstaller() {
       
       let instructions = 'Para instalar o app:\n\n'
       
-      if (isIOS && isSafari) {
+      if (isIOSSafari) {
         instructions += '📱 Safari iOS:\n1. Toque no botão "Compartilhar" (📤)\n2. Role para baixo e toque em "Adicionar à Tela Inicial"\n3. Toque em "Adicionar"'
       } else if (isIOS && isChrome) {
         instructions += '📱 Chrome iOS:\n1. Toque no menu (⋮) no canto superior direito\n2. Toque em "Adicionar à tela inicial"\n3. Toque em "Adicionar"'
@@ -210,8 +212,9 @@ export function PWAInstaller() {
               const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
               const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
               const isChrome = /chrome/i.test(navigator.userAgent)
+              const isIOSSafari = isIOS && isSafari && !isChrome
               
-              if (isIOS && isSafari) {
+              if (isIOSSafari) {
                 return "Toque em Compartilhar (📤) → 'Adicionar à Tela Inicial'"
               } else if (isIOS && isChrome) {
                 return "Toque no menu (⋮) → 'Adicionar à tela inicial'"
@@ -233,10 +236,12 @@ export function PWAInstaller() {
             {(() => {
               const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
               const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+              const isChrome = /chrome/i.test(navigator.userAgent)
+              const isIOSSafari = isIOS && isSafari && !isChrome
               
               if (deferredPrompt) {
                 return "Instalar Aplicativo"
-              } else if (isIOS && isSafari) {
+              } else if (isIOSSafari) {
                 return "Ver Instruções"
               } else if (isIOS) {
                 return "Ver Instruções"
