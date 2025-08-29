@@ -25,72 +25,125 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  const handleAuthUser = useCallback(async (supabaseUser: User) => {
+    const handleAuthUser = useCallback(async (supabaseUser: User) => {
     try {
-      // Get user profile with role
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, role, created_at')
-        .eq('id', supabaseUser.id)
-        .single()
-
-      if (error) {
-        console.error('Error fetching profile:', error)
-        toast({
-          title: "Erro de autenticação",
-          description: "Não foi possível carregar o perfil do usuário",
-          variant: "destructive",
-        })
+      // Prevent multiple simultaneous calls for the same user
+      if (user?.id === supabaseUser.id) {
         setIsLoading(false)
         return
       }
 
-      if (profile && supabaseUser.email) {
-        const authUser: AuthUser = {
-          id: supabaseUser.id,
-          email: supabaseUser.email,
-          role: profile.role === 'reseller' ? 'revendedor' : profile.role
-        }
-        setUser(authUser)
+      setIsLoading(true)
+      
+      // Get user profile with timeout to prevent hanging requests
+      const profilePromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single()
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+      )
+
+      const { data: profile, error } = await Promise.race([
+        profilePromise,
+        timeoutPromise
+      ]) as any
+
+      if (error) {
+        console.error('Error fetching profile:', error)
+        setUser(null)
+        setIsLoading(false)
+        return
       }
+
+      const userWithProfile: AuthUser = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        role: profile.role === 'admin' ? 'admin' : 'revendedor'
+      }
+
+      setUser(userWithProfile)
+      setIsLoading(false)
     } catch (error) {
       console.error('Error in handleAuthUser:', error)
-      toast({
-        title: "Erro de autenticação",
-        description: "Erro interno do sistema",
-        variant: "destructive",
-      })
-    } finally {
+      setUser(null)
       setIsLoading(false)
     }
-  }, [toast])
+  }, [user?.id])
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        handleAuthUser(session.user)
-      } else {
-        setIsLoading(false)
-      }
-    })
+    let isMounted = true
+    
+    const initializeAuth = async () => {
+      try {
+        // Get initial session with timeout
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        )
 
-    // Listen for auth changes
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any
+
+        if (!isMounted) return
+
+        if (session) {
+          await handleAuthUser(session.user)
+        } else {
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    initializeAuth()
+
+    // Listen for auth changes with debouncing
+    let authTimeout: NodeJS.Timeout
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        await handleAuthUser(session.user)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setIsLoading(false)
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        await handleAuthUser(session.user)
-      }
+      if (!isMounted) return
+
+      // Debounce auth state changes to prevent rapid fire calls
+      clearTimeout(authTimeout)
+      authTimeout = setTimeout(async () => {
+        if (!isMounted) return
+
+        try {
+          if (event === 'SIGNED_IN' && session) {
+            await handleAuthUser(session.user)
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null)
+            setIsLoading(false)
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            // Only refresh if user doesn't exist or ID changed
+            if (!user || user.id !== session.user.id) {
+              await handleAuthUser(session.user)
+            }
+          }
+        } catch (error) {
+          console.error('Error handling auth state change:', error)
+          setUser(null)
+          setIsLoading(false)
+        }
+      }, 100)
     })
 
-    return () => subscription.unsubscribe()
-  }, [handleAuthUser])
+    return () => {
+      isMounted = false
+      clearTimeout(authTimeout)
+      subscription.unsubscribe()
+    }
+  }, [handleAuthUser, user?.id])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)

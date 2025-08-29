@@ -108,10 +108,18 @@ export async function deleteProduct(productId: number): Promise<void> {
 
 // Hard delete produto (apenas se necessário)
 export async function hardDeleteProduct(productId: number): Promise<void> {
-  // Primeiro deletar fotos
+  // Primeiro deletar movimentações de estoque relacionadas
+  const { error: movementsError } = await supabase
+    .from('inventory_movements')
+    .delete()
+    .eq('product_id', productId)
+  
+  if (movementsError) throw movementsError
+  
+  // Segundo deletar fotos
   await deleteProductPhotos(productId)
   
-  // Depois deletar produto
+  // Por último deletar produto
   const { error } = await supabase
     .from('products')
     .delete()
@@ -126,7 +134,14 @@ export function handleSupabaseError(error: any): string {
     return 'Código do produto já existe. Use um código diferente.'
   }
   if (error.code === '23503') {
-    return 'Categoria selecionada não existe.'
+    // Verifica se o erro é sobre foreign key constraint
+    if (error.message?.includes('inventory_movements')) {
+      return 'Não é possível excluir: produto possui movimentações de estoque relacionadas.'
+    }
+    if (error.message?.includes('category')) {
+      return 'Categoria selecionada não existe.'
+    }
+    return 'Não é possível excluir: produto possui registros relacionados no sistema.'
   }
   if (error.message?.includes('permission denied')) {
     return 'Sem permissão para esta operação. Faça login como administrador.'

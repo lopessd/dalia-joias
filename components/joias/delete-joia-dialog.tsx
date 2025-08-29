@@ -63,11 +63,9 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: Delete
             Excluir Joia
           </DialogTitle>
           <DialogDescription className="font-body">
-            Esta ação não pode ser desfeita. A joia será permanentemente removida do sistema.
+            Esta ação não pode ser desfeita. A joia e todas as suas movimentações de estoque serão permanentemente removidas do sistema.
           </DialogDescription>
-        </DialogHeader>
-
-        <div className="p-4 bg-muted rounded-lg">
+        </DialogHeader>        <div className="p-4 bg-muted rounded-lg">
           <h4 className="font-heading text-sm text-foreground mb-2">{joia.name}</h4>
           <p className="text-xs text-muted-foreground font-body">Código: {joia.code}</p>
           <p className="text-xs text-muted-foreground font-body">Categoria: {joia.category?.name || 'Sem categoria'}</p>
