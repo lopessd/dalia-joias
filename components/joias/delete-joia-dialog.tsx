@@ -11,38 +11,47 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle } from "lucide-react"
-
-interface Joia {
-  id: string
-  codigo: string
-  nome: string
-  categoria: string
-  descricao: string
-  precoCusto: number
-  precoVenda: number
-  quantidade: number
-  status: string
-  fotos: string[]
-}
+import { hardDeleteProduct, handleSupabaseError } from '@/lib/products-api'
+import { useToast } from '@/hooks/use-toast'
+import type { ProductWithDetails } from '@/lib/supabase'
 
 interface DeleteJoiaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  joia: Joia
+  joia: ProductWithDetails
+  onSuccess?: () => void
 }
 
-export function DeleteJoiaDialog({ open, onOpenChange, joia }: DeleteJoiaDialogProps) {
+export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: DeleteJoiaDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   const handleDelete = async () => {
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Joia excluída:", joia.id)
-      setIsLoading(false)
+    try {
+      await hardDeleteProduct(joia.id) // Exclusão real do banco de dados
+      
+      toast({
+        title: "Sucesso",
+        description: "Joia excluída com sucesso!",
+        variant: "default"
+      })
+
       onOpenChange(false)
-    }, 1000)
+      if (onSuccess) onSuccess()
+
+    } catch (error: any) {
+      console.error('Erro ao excluir joia:', error)
+      const errorMessage = handleSupabaseError(error)
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -59,10 +68,9 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia }: DeleteJoiaDialogP
         </DialogHeader>
 
         <div className="p-4 bg-muted rounded-lg">
-          <h4 className="font-heading text-sm text-foreground mb-2">{joia.nome}</h4>
-          <p className="text-xs text-muted-foreground font-body">Código: {joia.codigo}</p>
-          <p className="text-xs text-muted-foreground font-body">Categoria: {joia.categoria}</p>
-          <p className="text-xs text-muted-foreground font-body">Estoque: {joia.quantidade} unidades</p>
+          <h4 className="font-heading text-sm text-foreground mb-2">{joia.name}</h4>
+          <p className="text-xs text-muted-foreground font-body">Código: {joia.code}</p>
+          <p className="text-xs text-muted-foreground font-body">Categoria: {joia.category?.name || 'Sem categoria'}</p>
         </div>
 
         <DialogFooter>

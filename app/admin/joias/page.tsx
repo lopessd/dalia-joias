@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,85 +8,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign } from "lucide-react"
+import { Plus, Search, Filter, Gem, Package, TrendingUp, DollarSign, X, ArrowUp, ArrowDown } from "lucide-react"
 import { JoiaCard } from "@/components/joias/joia-card"
 import { CreateJoiaDialog } from "@/components/joias/create-joia-dialog"
 import { TransactionCard } from "@/components/joias/transaction-card"
-
-// Mock data
-const mockJoias = [
-  {
-    id: "J001",
-    codigo: "AN001",
-    nome: "Anel de Ouro 18k",
-    categoria: "Anéis",
-    descricao: "Anel clássico em ouro 18k com acabamento polido",
-    precoCusto: 450.0,
-    precoVenda: 680.0,
-    quantidade: 15,
-    status: "ativo",
-    fotos: ["/anel-ouro.png"],
-  },
-  {
-    id: "J002",
-    codigo: "BR002",
-    nome: "Brincos de Prata",
-    categoria: "Brincos",
-    descricao: "Brincos delicados em prata 925 com zircônias",
-    precoCusto: 120.0,
-    precoVenda: 180.0,
-    quantidade: 8,
-    status: "ativo",
-    fotos: ["/brincos-prata.png"],
-  },
-  {
-    id: "J003",
-    codigo: "CO003",
-    nome: "Colar de Pérolas",
-    categoria: "Colares",
-    descricao: "Colar elegante com pérolas naturais",
-    precoCusto: 280.0,
-    precoVenda: 420.0,
-    quantidade: 3,
-    status: "baixo_estoque",
-    fotos: ["/colar-perolas.png"],
-  },
-]
-
-const mockTransactions = [
-  {
-    id: "T001",
-    joiaId: "J001",
-    joiaNome: "Anel de Ouro 18k",
-    tipo: "entrada",
-    quantidade: 10,
-    motivo: "Compra de fornecedor",
-    data: "2024-01-15",
-    valor: 4500.0,
-  },
-  {
-    id: "T002",
-    joiaId: "J002",
-    joiaNome: "Brincos de Prata",
-    tipo: "saida",
-    quantidade: 2,
-    motivo: "Venda para revendedor",
-    data: "2024-01-14",
-    valor: 360.0,
-  },
-  {
-    id: "T003",
-    joiaId: "J003",
-    joiaNome: "Colar de Pérolas",
-    tipo: "envio",
-    quantidade: 1,
-    motivo: "Mostruário para Maria Silva",
-    data: "2024-01-13",
-    valor: 420.0,
-  },
-]
+import { getProductsWithDetails, getCategories } from '@/lib/products-api'
+import { getInventoryMovements, getInventoryMovementsFiltered, getInventoryStats } from '@/lib/inventory-api'
+import type { InventoryMovement } from '@/lib/inventory-api'
+import { supabase } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
+import type { ProductWithDetails, Category } from '@/lib/supabase'
 
 export default function JoiasPage() {
+  const [products, setProducts] = useState<ProductWithDetails[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [movements, setMovements] = useState<InventoryMovement[]>([])
+  const [historyStats, setHistoryStats] = useState({
+    totalMovements: 0,
+    totalEntries: 0,
+    totalExits: 0,
+    recentMovements: 0
+  })
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("todas")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -96,33 +39,158 @@ export default function JoiasPage() {
     motivo: "",
     tipo: "todos",
   })
+  const { toast } = useToast()
 
-  const categories = ["Anéis", "Brincos", "Colares", "Pulseiras", "Relógios"]
+  useEffect(() => {
+    loadData()
 
-  const filteredJoias = mockJoias.filter((joia) => {
+    // Subscrição em tempo real para manter a UI sincronizada com o banco
+    // Escuta mudanças nas tabelas relevantes e recarrega os dados quando ocorrerem
+    const channel = supabase
+      .channel('public:joias')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_photos' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_movements' }, () => {
+        // ADICIONAR: Recarregar quando houver mudanças nas movimentações
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      // Remove a assinatura ao desmontar
+      try {
+        supabase.removeChannel(channel)
+      } catch (err) {
+        // fallback: tentar unsubscribe direto
+        // @ts-ignore
+        channel.unsubscribe?.()
+      }
+    }
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true)
+      const [productsData, categoriesData, movementsData, statsData] = await Promise.all([
+        getProductsWithDetails(),
+        getCategories(),
+        getInventoryMovements(),
+        getInventoryStats()
+      ])
+      setProducts(productsData)
+      setCategories(categoriesData)
+      setMovements(movementsData)
+      setHistoryStats(statsData)
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados. Tente novamente.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Função callback para recarregar dados após mudanças
+  const handleDataChange = () => {
+    loadData()
+  }
+
+  // Funções para controle dos filtros
+  const clearAllFilters = () => {
+    setTransactionFilters({
+      dataInicio: "",
+      dataFim: "",
+      motivo: "",
+      tipo: "todos",
+    })
+  }
+
+  const hasActiveFilters = () => {
+    return (
+      transactionFilters.dataInicio !== "" ||
+      transactionFilters.dataFim !== "" ||
+      transactionFilters.motivo !== "" ||
+      transactionFilters.tipo !== "todos"
+    )
+  }
+
+  // Filtros de produtos
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      joia.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      joia.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "todas" || joia.categoria === selectedCategory
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.code.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "todas" || product.category?.name === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  const filteredTransactions = mockTransactions.filter((transaction) => {
-    const matchesMotivo = transaction.motivo.toLowerCase().includes(transactionFilters.motivo.toLowerCase())
-    const matchesTipo = transactionFilters.tipo === "todos" || transaction.tipo === transactionFilters.tipo
-    return matchesMotivo && matchesTipo
+  const filteredMovements = movements.filter((movement) => {
+    const matchesMotivo = movement.reason.toLowerCase().includes(transactionFilters.motivo.toLowerCase())
+    
+    let matchesTipo = true
+    if (transactionFilters.tipo === 'entrada') {
+      matchesTipo = movement.quantity > 0
+    } else if (transactionFilters.tipo === 'saida') {
+      matchesTipo = movement.quantity < 0
+    }
+    
+    // Filtros de data
+    let matchesDate = true
+    if (transactionFilters.dataInicio || transactionFilters.dataFim) {
+      const movementDate = new Date(movement.created_at)
+      
+      if (transactionFilters.dataInicio) {
+        const startDate = new Date(transactionFilters.dataInicio)
+        matchesDate = matchesDate && movementDate >= startDate
+      }
+      
+      if (transactionFilters.dataFim) {
+        const endDate = new Date(transactionFilters.dataFim + 'T23:59:59')
+        matchesDate = matchesDate && movementDate <= endDate
+      }
+    }
+    
+    return matchesMotivo && matchesTipo && matchesDate
   })
 
-  const totalPecas = mockJoias.reduce((sum, joia) => sum + joia.quantidade, 0)
-  const valorTotalEstoque = mockJoias.reduce((sum, joia) => sum + joia.quantidade * joia.precoVenda, 0)
-  const joisasAtivas = mockJoias.filter((joia) => joia.status === "ativo").length
-  const joisasBaixoEstoque = mockJoias.filter((joia) => joia.status === "baixo_estoque").length
+  // Cálculos dos KPIs
+  const totalPecas = products.length
+  const valorTotalEstoque = products.reduce((sum, product) => {
+    return sum + (product.selling_price || product.cost_price)
+  }, 0)
+  const joisasAtivas = products.filter((product) => product.active).length
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar userType="admin" />
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando joias...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -155,8 +223,8 @@ export default function JoiasPage() {
 
             <TabsContent value="estoque" className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="border-border">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 justify-items-center">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Total de Peças</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
@@ -167,7 +235,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Valor Total</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -178,7 +246,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border">
+                <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-body text-muted-foreground">Joias Ativas</CardTitle>
                     <Gem className="h-4 w-4 text-muted-foreground" />
@@ -189,16 +257,7 @@ export default function JoiasPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border border-orange-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-body text-muted-foreground">Baixo Estoque</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-orange-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-heading text-orange-600">{joisasBaixoEstoque}</div>
-                    <p className="text-xs text-orange-600 font-body">precisam reposição</p>
-                  </CardContent>
-                </Card>
+                {/* Baixo Estoque removido conforme solicitado */}
               </div>
 
               {/* Filters */}
@@ -235,8 +294,8 @@ export default function JoiasPage() {
                         <SelectContent>
                           <SelectItem value="todas">Todas as categorias</SelectItem>
                           {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -260,12 +319,12 @@ export default function JoiasPage() {
 
               {/* Joias Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredJoias.map((joia) => (
-                  <JoiaCard key={joia.id} joia={joia} />
+                {filteredProducts.map((product) => (
+                  <JoiaCard key={product.id} joia={product} onDataChange={handleDataChange} />
                 ))}
               </div>
 
-              {filteredJoias.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <Card className="border-border">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Gem className="w-12 h-12 text-muted-foreground mb-4" />
@@ -279,6 +338,53 @@ export default function JoiasPage() {
             </TabsContent>
 
             <TabsContent value="historico" className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Total Movimentações</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalMovements}</div>
+                    <p className="text-xs text-muted-foreground font-body">registros</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Entradas</CardTitle>
+                    <ArrowUp className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalEntries}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Saídas</CardTitle>
+                    <ArrowDown className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.totalExits}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Últimos 7 dias</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{historyStats.recentMovements}</div>
+                    <p className="text-xs text-muted-foreground font-body">movimentações</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Transaction Filters */}
               <Card className="border-border">
                 <CardHeader>
@@ -288,7 +394,7 @@ export default function JoiasPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dataInicio" className="font-body">
                         Data Início
@@ -362,24 +468,39 @@ export default function JoiasPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label className="font-body">Ações</Label>
+                      <Button
+                        variant="outline"
+                        onClick={clearAllFilters}
+                        className="w-full font-body gap-2"
+                        disabled={!hasActiveFilters()}
+                      >
+                        <X className="w-4 h-4" />
+                        Limpar Filtros
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Transactions List */}
               <div className="space-y-4">
-                {filteredTransactions.map((transaction) => (
-                  <TransactionCard key={transaction.id} transaction={transaction} />
+                {filteredMovements.map((movement) => (
+                  <TransactionCard key={movement.id} movement={movement} />
                 ))}
               </div>
 
-              {filteredTransactions.length === 0 && (
+              {filteredMovements.length === 0 && (
                 <Card className="border-border">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Package className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma transação encontrada</h3>
+                    <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma movimentação encontrada</h3>
                     <p className="text-muted-foreground font-body text-center">
-                      Tente ajustar os filtros para ver as transações.
+                      {movements.length === 0 
+                        ? "Ainda não há movimentações registradas no sistema."
+                        : "Tente ajustar os filtros para ver as movimentações."
+                      }
                     </p>
                   </CardContent>
                 </Card>
@@ -389,7 +510,12 @@ export default function JoiasPage() {
         </div>
       </main>
 
-      <CreateJoiaDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateJoiaDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        categories={categories}
+        onSuccess={handleDataChange}
+      />
     </div>
   )
 }
