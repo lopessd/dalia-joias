@@ -23,15 +23,15 @@ export function Sidebar({ userType }: SidebarProps) {
   const adminNavItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/joias", label: "Joias", icon: Gem },
-    { href: "/admin/revendedores", label: "Revendedores", icon: Users },
-    { href: "/admin/mostruario", label: "Mostruário", icon: Send },
+    // { href: "/admin/revendedores", label: "Revendedores", icon: Users },
+    // { href: "/admin/mostruario", label: "Mostruário", icon: Send },
   ]
 
   const revendedorNavItems = [
     { href: "/revendedor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/revendedor/vendas", label: "Vendas", icon: ShoppingCart },
+    // { href: "/revendedor/vendas", label: "Vendas", icon: ShoppingCart },
     { href: "/revendedor/joias", label: "Joias", icon: Gem },
-    { href: "/revendedor/historico", label: "Histórico", icon: History },
+    // { href: "/revendedor/historico", label: "Histórico", icon: History },
   ]
 
   const navItems = userType === "admin" ? adminNavItems : revendedorNavItems
@@ -78,11 +78,11 @@ export function Sidebar({ userType }: SidebarProps) {
           {/* Header */}
           <div className="p-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sidebar-primary rounded-xl flex items-center justify-center">
-                <Gem className="w-5 h-5 text-sidebar-primary-foreground" />
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden">
+                <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-8 h-8 object-contain" />
               </div>
               <div>
-                <h2 className="font-heading text-lg text-sidebar-foreground">Sistema Joias</h2>
+                <h2 className="font-heading text-lg text-sidebar-foreground">Dalia Joyas</h2>
                 <p className="text-sm text-muted-foreground capitalize">{userType}</p>
               </div>
             </div>

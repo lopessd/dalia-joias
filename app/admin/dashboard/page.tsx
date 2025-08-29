@@ -34,7 +34,7 @@ export default function AdminDashboard() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-heading text-foreground mb-2">Dashboard Administrativo</h1>
-            <p className="text-muted-foreground font-body">Visão geral do sistema de gestão de joias</p>
+            <p className="text-muted-foreground font-body">Visão geral do sistema Dalia Joyas</p>
           </div>
 
           {/* Main Stats Grid */}

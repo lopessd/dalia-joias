@@ -66,10 +66,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-            <Gem className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 overflow-hidden">
+            <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-12 h-12 object-contain" />
           </div>
-          <h1 className="text-3xl font-heading text-foreground mb-2">Sistema de Joias</h1>
+          <h1 className="text-3xl font-heading text-foreground mb-2">Dalia Joyas</h1>
           <p className="text-muted-foreground font-body">Faça login para acessar sua conta</p>
         </div>
 
