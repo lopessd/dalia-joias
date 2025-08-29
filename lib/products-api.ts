@@ -15,13 +15,23 @@ export async function getProductsWithDetails(): Promise<ProductWithDetails[]> {
     .select(`
       *,
       category:categories(id, name, description),
-      photos:product_photos(id, image)
+      photos:product_photos(id, image),
+      inventory_movements(quantity)
     `)
     .eq('active', true)
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  
+  // Calcular estoque atual para cada produto
+  const productsWithStock = data?.map(product => ({
+    ...product,
+    current_stock: product.inventory_movements?.reduce(
+      (total: number, movement: any) => total + movement.quantity, 0
+    ) || 0
+  })) || []
+
+  return productsWithStock
 }
 
 // Buscar categorias

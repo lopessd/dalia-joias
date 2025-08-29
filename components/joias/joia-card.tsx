@@ -60,6 +60,12 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
               </div>
               <p className="text-sm text-muted-foreground font-body">Código: {joia.code}</p>
               <p className="text-sm text-muted-foreground font-body">{joia.category?.name || 'Sem categoria'}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Package className="w-4 h-4 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground font-body">
+                  Estoque: {joia.current_stock || 0} unidades
+                </p>
+              </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

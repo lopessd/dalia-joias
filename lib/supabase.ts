@@ -54,6 +54,7 @@ export interface ProductWithDetails {
   created_at: string
   category: Category | null
   photos: ProductPhoto[]
+  current_stock: number  // ADICIONAR ESTA LINHA
 }
 
 // Tipos para formulários
