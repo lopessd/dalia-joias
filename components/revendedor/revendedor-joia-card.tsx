@@ -72,7 +72,7 @@ export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="aspect-square bg-muted rounded-lg mb-4 overflow-hidden">
+          <div className="aspect-[2/1] bg-muted rounded-lg mb-2 overflow-hidden">
             <img src={joia.fotos[0] || "/placeholder.svg"} alt={joia.nome} className="w-full h-full object-cover" />
           </div>
           <div className="space-y-3">

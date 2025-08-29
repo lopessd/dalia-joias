@@ -273,6 +273,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                       variant="outline"
                       className="aspect-square border-dashed font-body bg-transparent"
                       onClick={addFoto}
+                      disabled={true}
                     >
                       <Upload className="h-4 w-4" />
                     </Button>

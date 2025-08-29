@@ -21,14 +21,14 @@ export function Sidebar({ userType }: SidebarProps) {
   const { logout } = useAuth()
 
   const adminNavItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    // { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/joias", label: "Joias", icon: Gem },
     // { href: "/admin/revendedores", label: "Revendedores", icon: Users },
     // { href: "/admin/mostruario", label: "Mostruário", icon: Send },
   ]
 
   const revendedorNavItems = [
-    { href: "/revendedor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    // { href: "/revendedor/dashboard", label: "Dashboard", icon: LayoutDashboard },
     // { href: "/revendedor/vendas", label: "Vendas", icon: ShoppingCart },
     { href: "/revendedor/joias", label: "Joias", icon: Gem },
     // { href: "/revendedor/historico", label: "Histórico", icon: History },
@@ -79,7 +79,7 @@ export function Sidebar({ userType }: SidebarProps) {
           <div className="p-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden">
-                <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-8 h-8 object-contain" />
+                <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-8 h-8 object-contain rounded" />
               </div>
               <div>
                 <h2 className="font-heading text-lg text-sidebar-foreground">Dalia Joyas</h2>

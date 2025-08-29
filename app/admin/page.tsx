@@ -14,11 +14,11 @@ export default function AdminPage() {
         // Not authenticated - redirect to login
         router.push('/')
       } else if (user.role === 'admin') {
-        // Admin user - redirect to dashboard
-        router.push('/admin/dashboard')
+        // Admin user - redirect to joias
+        router.push('/admin/joias')
       } else if (user.role === 'revendedor') {
-        // Revendedor trying to access admin - redirect to their dashboard
-        router.push('/revendedor/dashboard')
+        // Revendedor trying to access admin - redirect to their joias
+        router.push('/revendedor/joias')
       } else {
         // Unknown role - redirect to login
         router.push('/')

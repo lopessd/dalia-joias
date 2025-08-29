@@ -24,11 +24,11 @@ export function RouteGuard({ children, allowedRoles, redirectTo = "/" }: RouteGu
 
       // If allowedRoles is specified and user doesn't have permission
       if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // Redirect to appropriate dashboard based on user role
+        // Redirect to appropriate joias based on user role
         if (user.role === 'admin') {
-          router.push('/admin/dashboard')
+          router.push('/admin/joias')
         } else if (user.role === 'revendedor') {
-          router.push('/revendedor/dashboard')
+          router.push('/revendedor/joias')
         } else {
           router.push(redirectTo)
         }

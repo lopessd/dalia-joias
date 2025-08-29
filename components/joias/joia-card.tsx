@@ -97,7 +97,7 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="aspect-square bg-muted rounded-lg mb-4 overflow-hidden">
+          <div className="aspect-[2/1] bg-muted rounded-lg mb-2 overflow-hidden">
             <img 
               src={joia.photos[0]?.image || "/placeholder.svg"} 
               alt={joia.name} 

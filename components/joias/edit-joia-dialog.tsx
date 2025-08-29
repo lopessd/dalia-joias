@@ -282,6 +282,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
                       variant="outline"
                       className="aspect-square border-dashed font-body bg-transparent"
                       onClick={addFoto}
+                      disabled={true}
                     >
                       <Upload className="h-4 w-4" />
                     </Button>

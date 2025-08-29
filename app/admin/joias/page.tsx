@@ -162,10 +162,17 @@ export default function JoiasPage() {
   })
 
   // Cálculos dos KPIs
-  const totalPecas = products.length
-  const valorTotalEstoque = products.reduce((sum, product) => {
-    return sum + (product.selling_price || product.cost_price)
+  const totalProdutos = products.length
+  const totalEstoque = products.reduce((sum, product) => {
+    return sum + (product.current_stock || 0)
   }, 0)
+  const valorTotalCusto = products.reduce((sum, product) => {
+    return sum + ((product.current_stock || 0) * product.cost_price)
+  }, 0)
+  const valorTotalEstoque = products.reduce((sum, product) => {
+    return sum + ((product.current_stock || 0) * (product.selling_price || product.cost_price))
+  }, 0)
+  const lucroTotal = valorTotalEstoque - valorTotalCusto
   const joisasAtivas = products.filter((product) => product.active).length
 
   const formatCurrency = (value: number) => {
@@ -223,37 +230,48 @@ export default function JoiasPage() {
 
             <TabsContent value="estoque" className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 justify-items-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
                 <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-body text-muted-foreground">Total de Peças</CardTitle>
+                    <CardTitle className="text-sm font-body text-muted-foreground">Total de Produtos</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-heading text-foreground">{totalPecas.toLocaleString()}</div>
+                    <div className="text-2xl font-heading text-foreground">{totalProdutos.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground font-body">produtos cadastrados</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border w-full max-w-md">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-body text-muted-foreground">Quantidade Estoque</CardTitle>
+                    <Gem className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-heading text-foreground">{totalEstoque.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground font-body">peças em estoque</p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-body text-muted-foreground">Valor Total</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-body text-muted-foreground">Valor de Custo</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-orange-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-heading text-foreground">{formatCurrency(valorTotalEstoque)}</div>
-                    <p className="text-xs text-muted-foreground font-body">preço de venda</p>
+                    <div className="text-2xl font-heading text-foreground">{formatCurrency(valorTotalCusto)}</div>
+                    <p className="text-xs text-muted-foreground font-body">investimento total</p>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border w-full max-w-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-body text-muted-foreground">Joias Ativas</CardTitle>
-                    <Gem className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-body text-muted-foreground">Valor de Venda</CardTitle>
+                    <DollarSign className="h-4 w-4 text-green-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-heading text-foreground">{joisasAtivas}</div>
-                    <p className="text-xs text-muted-foreground font-body">produtos ativos</p>
+                    <div className="text-2xl font-heading text-foreground">{formatCurrency(valorTotalEstoque)}</div>
+                    <p className="text-xs text-green-600 font-body">+{formatCurrency(lucroTotal)} de lucro</p>
                   </CardContent>
                 </Card>
 
