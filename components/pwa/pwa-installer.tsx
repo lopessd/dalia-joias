@@ -20,10 +20,15 @@ export function PWAInstaller() {
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
+    console.log('PWA: Installer component mounted')
+    
     // Check if app is already installed
     const checkIfInstalled = () => {
       if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('PWA: App is already installed')
         setIsInstalled(true)
+      } else {
+        console.log('PWA: App is not installed')
       }
     }
 
@@ -37,9 +42,11 @@ export function PWAInstaller() {
       
       // Show install prompt after a delay if not installed
       if (!isInstalled) {
+        console.log('PWA: Scheduling install prompt to show in 3 seconds')
         setTimeout(() => {
+          console.log('PWA: Showing install prompt')
           setShowInstallPrompt(true)
-        }, 5000) // Show after 5 seconds
+        }, 3000) // Reduced to 3 seconds for testing
       }
     }
 
@@ -66,6 +73,18 @@ export function PWAInstaller() {
         })
     }
 
+    // For development: Show install prompt after delay even if beforeinstallprompt doesn't fire
+    const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost'
+    if (isDevelopment && !isInstalled) {
+      console.log('PWA: Development mode - showing install prompt after 5 seconds regardless of beforeinstallprompt')
+      setTimeout(() => {
+        if (!isInstalled && !sessionStorage.getItem('pwa-install-dismissed')) {
+          console.log('PWA: Development mode - forcing install prompt')
+          setShowInstallPrompt(true)
+        }
+      }, 5000)
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener)
       window.removeEventListener('appinstalled', handleAppInstalled)
@@ -73,24 +92,29 @@ export function PWAInstaller() {
   }, [isInstalled])
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return
-
-    try {
-      await deferredPrompt.prompt()
-      const choiceResult = await deferredPrompt.userChoice
-      
-      console.log('PWA: User choice:', choiceResult.outcome)
-      
-      if (choiceResult.outcome === 'accepted') {
-        console.log('PWA: User accepted the install prompt')
-      } else {
-        console.log('PWA: User dismissed the install prompt')
+    if (deferredPrompt) {
+      try {
+        await deferredPrompt.prompt()
+        const choiceResult = await deferredPrompt.userChoice
+        
+        console.log('PWA: User choice:', choiceResult.outcome)
+        
+        if (choiceResult.outcome === 'accepted') {
+          console.log('PWA: User accepted the install prompt')
+        } else {
+          console.log('PWA: User dismissed the install prompt')
+        }
+        
+        setDeferredPrompt(null)
+        setShowInstallPrompt(false)
+      } catch (error) {
+        console.error('PWA: Error during installation:', error)
       }
-      
-      setDeferredPrompt(null)
+    } else {
+      // Fallback for development or browsers that don't support beforeinstallprompt
+      console.log('PWA: No deferred prompt available - showing instructions')
+      alert('Para instalar o app:\n\nChrome: Menu > Instalar app\nSafari: Compartilhar > Adicionar à Tela Inicial\nFirefox: Menu > Instalar')
       setShowInstallPrompt(false)
-    } catch (error) {
-      console.error('PWA: Error during installation:', error)
     }
   }
 
