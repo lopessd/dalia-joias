@@ -14,29 +14,52 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { login, isLoading, user } = useAuth()
   const router = useRouter()
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (!isLoading && user) {
       if (user.role === 'admin') {
         router.push('/admin/dashboard')
       } else if (user.role === 'revendedor') {
         router.push('/revendedor/dashboard')
       }
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
 
-    const success = await login(email, password)
-    
-    if (success && user) {
-      // Redirect based on role - this will be handled by useEffect above
-      // when user state is updated
+    try {
+      const success = await login(email, password)
+      
+      if (success) {
+        // Redirecionamento será feito pelo useEffect acima quando user for atualizado
+      }
+    } finally {
+      setIsSubmitting(false)
     }
+  }
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // Don't show login form if user is already authenticated
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -102,8 +125,8 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full font-body" disabled={isLoading}>
-                {isLoading ? "Entrando..." : "Entrar"}
+              <Button type="submit" className="w-full font-body" disabled={isSubmitting}>
+                {isSubmitting ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 

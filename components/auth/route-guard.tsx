@@ -37,8 +37,17 @@ export function RouteGuard({ children, allowedRoles, redirectTo = "/" }: RouteGu
     }
   }, [user, isLoading, allowedRoles, redirectTo, router])
 
-  // Show loading or nothing while checking authentication
-  if (isLoading || !user) {
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // If not authenticated, don't render content (redirect is happening)
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -48,7 +57,11 @@ export function RouteGuard({ children, allowedRoles, redirectTo = "/" }: RouteGu
 
   // If allowedRoles is specified and user doesn't have permission, don't render
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return null
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return <>{children}</>

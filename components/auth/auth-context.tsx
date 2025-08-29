@@ -134,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         // handleAuthUser will be called via onAuthStateChange
+        // Keep loading true until user state is updated
         toast({
           title: "Sucesso",
           description: "Login realizado com sucesso!",
@@ -157,12 +158,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut()
+      // Clear user state immediately
       setUser(null)
+      setIsLoading(false)
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Clear any cached data
+      if (typeof window !== 'undefined') {
+        // Clear localStorage/sessionStorage if needed
+        localStorage.clear()
+        sessionStorage.clear()
+      }
     } catch (error) {
       console.error('Logout error:', error)
       // Force local logout even if remote fails
       setUser(null)
+      setIsLoading(false)
     }
   }
 

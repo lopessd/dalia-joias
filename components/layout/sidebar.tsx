@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Gem, LayoutDashboard, Users, Send, ShoppingCart, History, User, LogOut, Menu, X } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-context"
+import { LogoutConfirmDialog } from "@/components/auth/logout-confirm-dialog"
 
 interface SidebarProps {
   userType: "admin" | "revendedor"
@@ -14,7 +15,9 @@ interface SidebarProps {
 
 export function Sidebar({ userType }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { logout } = useAuth()
 
   const adminNavItems = [
@@ -33,9 +36,20 @@ export function Sidebar({ userType }: SidebarProps) {
 
   const navItems = userType === "admin" ? adminNavItems : revendedorNavItems
 
-  const handleLogout = () => {
-    logout()
-    window.location.href = "/"
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true)
+  }
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await logout()
+      setShowLogoutDialog(false)
+      router.push("/")
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+      // Force redirect even if logout fails
+      router.push("/")
+    }
   }
 
   return (
@@ -114,7 +128,7 @@ export function Sidebar({ userType }: SidebarProps) {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-3 font-body text-destructive hover:text-destructive"
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
               >
                 <LogOut className="w-4 h-4" />
                 Sair
@@ -123,6 +137,13 @@ export function Sidebar({ userType }: SidebarProps) {
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <LogoutConfirmDialog 
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={handleLogoutConfirm}
+      />
     </>
   )
 }
