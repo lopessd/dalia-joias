@@ -186,7 +186,7 @@ export default function JoiasPage() {
     return (
       <div className="flex min-h-screen bg-background">
         <Sidebar userType="admin" />
-        <main className="flex-1 md:ml-64 p-4 md:p-8">
+        <main className="flex-1 md:ml-64 p-4 md:p-8 pt-16 md:pt-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
@@ -204,7 +204,7 @@ export default function JoiasPage() {
     <div className="flex min-h-screen bg-background">
       <Sidebar userType="admin" />
 
-      <main className="flex-1 md:ml-64 p-4 md:p-8">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-16 md:pt-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">

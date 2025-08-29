@@ -54,15 +54,15 @@ export function Sidebar({ userType }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="fixed top-4 left-4 z-50 md:hidden bg-background/80 backdrop-blur-sm border border-border"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+      {/* Mobile hamburger button - só aparece quando fechado */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed top-4 left-4 z-50 p-2 rounded-md bg-background/80 backdrop-blur-sm border border-border hover:bg-background md:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
 
       {/* Overlay */}
       {isOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsOpen(false)} />}
@@ -76,7 +76,7 @@ export function Sidebar({ userType }: SidebarProps) {
       >
         <div className="flex flex-col h-full overflow-y-auto">
           {/* Header */}
-          <div className="p-6 border-b border-sidebar-border">
+          <div className="flex items-center justify-between p-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden">
                 <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-8 h-8 object-contain rounded" />
@@ -86,6 +86,14 @@ export function Sidebar({ userType }: SidebarProps) {
                 <p className="text-sm text-muted-foreground capitalize">{userType}</p>
               </div>
             </div>
+            
+            {/* Botão X alinhado à direita - mesmo estilo do hambúrguer */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-2 rounded-md bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors md:hidden"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Navigation */}
