@@ -124,7 +124,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-border border-orange-200">
+            <Card className="border-orange-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-body text-muted-foreground">Stock Bajo</CardTitle>
                 <AlertCircle className="h-4 w-4 text-orange-500" />
