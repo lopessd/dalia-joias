@@ -76,6 +76,11 @@ export default function RootLayout({
         {/* Startup Images for iOS */}
         <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
         
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        
         {/* Prevent automatic detection of phone numbers */}
         <meta name="format-detection" content="telephone=no" />
       </head>
