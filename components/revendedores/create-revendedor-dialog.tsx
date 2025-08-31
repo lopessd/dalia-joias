@@ -38,7 +38,7 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
 
     // Simulate API call
     setTimeout(() => {
-      console.log("Novo revendedor criado:", formData)
+      console.log("Nuevo distribuidor creado:", formData)
       setIsLoading(false)
       onOpenChange(false)
       // Reset form
@@ -61,9 +61,9 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Criar Novo Revendedor</DialogTitle>
+          <DialogTitle className="font-heading">Crear Nuevo Distribuidor</DialogTitle>
           <DialogDescription className="font-body">
-            Preencha os dados do novo revendedor para adicionar ao sistema.
+            Complete los datos del nuevo distribuidor para agregarlo al sistema.
           </DialogDescription>
         </DialogHeader>
 
@@ -71,11 +71,11 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nome" className="font-body">
-                Nome Completo *
+                Nombre Completo *
               </Label>
               <Input
                 id="nome"
-                placeholder="Ex: Maria Silva"
+                placeholder="Ej: María Silva"
                 value={formData.nome}
                 onChange={(e) => handleInputChange("nome", e.target.value)}
                 required
@@ -101,12 +101,12 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="senha" className="font-body">
-                Senha *
+                Contraseña *
               </Label>
               <Input
                 id="senha"
                 type="password"
-                placeholder="Digite uma senha segura"
+                placeholder="Ingrese una contraseña segura"
                 value={formData.senha}
                 onChange={(e) => handleInputChange("senha", e.target.value)}
                 required
@@ -115,11 +115,11 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone" className="font-body">
-                Telefone *
+                Teléfono *
               </Label>
               <Input
                 id="telefone"
-                placeholder="(11) 99999-9999"
+                placeholder="+595 971 123456"
                 value={formData.telefone}
                 onChange={(e) => handleInputChange("telefone", e.target.value)}
                 required
@@ -130,11 +130,11 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
 
           <div className="space-y-2">
             <Label htmlFor="endereco" className="font-body">
-              Endereço Completo *
+              Dirección Completa *
             </Label>
             <Input
               id="endereco"
-              placeholder="Rua, número, bairro, cidade, estado"
+              placeholder="Calle, número, barrio, ciudad, departamento"
               value={formData.endereco}
               onChange={(e) => handleInputChange("endereco", e.target.value)}
               required
@@ -144,11 +144,11 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
 
           <div className="space-y-2">
             <Label htmlFor="descricao" className="font-body">
-              Descrição
+              Descripción
             </Label>
             <Textarea
               id="descricao"
-              placeholder="Descreva o perfil do revendedor, especialidades, etc..."
+              placeholder="Describa el perfil del distribuidor, especialidades, etc..."
               value={formData.descricao}
               onChange={(e) => handleInputChange("descricao", e.target.value)}
               rows={3}
@@ -161,7 +161,7 @@ export function CreateRevendedorDialog({ open, onOpenChange }: CreateRevendedorD
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading} className="font-body">
-              {isLoading ? "Criando..." : "Criar Revendedor"}
+              {isLoading ? "Creando..." : "Crear Distribuidor"}
             </Button>
           </DialogFooter>
         </form>

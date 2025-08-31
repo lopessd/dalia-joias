@@ -36,14 +36,11 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
+    return new Date(dateString).toLocaleDateString("es-PY")
   }
 
   const getStatusColor = (status: string) => {
@@ -64,7 +61,7 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
       case "enviado":
         return "Enviado"
       case "pendente":
-        return "Pendente"
+        return "Pendiente"
       case "cancelado":
         return "Cancelado"
       default:
@@ -74,8 +71,8 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
 
   const handleExportPDF = () => {
     // In a real app, this would generate and download a PDF
-    console.log("Exportando PDF do mostruário:", mostruario.codigo)
-    alert(`PDF do mostruário ${mostruario.codigo} seria gerado aqui`)
+    console.log("Exportando PDF del muestrario:", mostruario.codigo)
+    alert(`PDF del muestrario ${mostruario.codigo} sería generado aquí`)
   }
 
   return (
@@ -110,7 +107,7 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => setIsViewDialogOpen(true)} className="font-body">
                   <Eye className="mr-2 h-4 w-4" />
-                  Ver Detalhes
+                  Ver Detalles
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPDF} className="font-body">
                   <FileText className="mr-2 h-4 w-4" />
@@ -127,14 +124,14 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Package className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-body">Peças</span>
+                  <span className="text-xs text-muted-foreground font-body">Piezas</span>
                 </div>
                 <p className="text-lg font-heading text-foreground">{mostruario.quantidadePecas}</p>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Package className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-body">Produtos</span>
+                  <span className="text-xs text-muted-foreground font-body">Productos</span>
                 </div>
                 <p className="text-lg font-heading text-foreground">{mostruario.quantidadeProdutos}</p>
               </div>
@@ -151,7 +148,7 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
 
             {/* Products Preview */}
             <div className="space-y-2">
-              <h4 className="text-sm font-heading text-foreground">Produtos:</h4>
+              <h4 className="text-sm font-heading text-foreground">Productos:</h4>
               <div className="space-y-1">
                 {mostruario.produtos.slice(0, 2).map((produto, index) => (
                   <div key={index} className="flex justify-between items-center text-xs font-body">
@@ -161,7 +158,7 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
                 ))}
                 {mostruario.produtos.length > 2 && (
                   <p className="text-xs text-muted-foreground font-body">
-                    +{mostruario.produtos.length - 2} produtos...
+                    +{mostruario.produtos.length - 2} productos...
                   </p>
                 )}
               </div>

@@ -151,4 +151,9 @@
       @apply text-xl;
     }
   }
+
+  /* Custom width utilities for tablet optimization */
+  .w-50 {
+    width: 12.5rem; /* 200px - optimized for tablet sidebar */
+  }
 }

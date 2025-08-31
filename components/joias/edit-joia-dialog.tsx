@@ -145,14 +145,14 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
   }
 
   const addFoto = () => {
-    const url = prompt("Digite a URL da imagem:")
+    const url = prompt("Ingrese la URL de la imagen:")
     if (url && validateImageUrl(url)) {
       setFotos((prev) => [...prev, url])
       setFotosChanged(true)
     } else if (url) {
       toast({
         title: "URL inválida",
-        description: "Por favor, insira uma URL de imagem válida",
+        description: "Por favor, ingrese una URL de imagen válida",
         variant: "destructive"
       })
     }
@@ -167,18 +167,18 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Editar Joia</DialogTitle>
+          <DialogTitle className="font-heading">Editar Joya</DialogTitle>
           <DialogDescription className="font-body">
-            Edite os dados da joia. Código não pode ser alterado.
+            Edite los datos de la joya. El código no se puede cambiar.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="joia" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="joia">Dados da Joia</TabsTrigger>
+            <TabsTrigger value="joia">Datos de la Joya</TabsTrigger>
             <TabsTrigger value="categorias">
               <Settings className="w-4 h-4 mr-2" />
-              Gerenciar Categorias
+              Gestionar Categorías
             </TabsTrigger>
           </TabsList>
 
@@ -187,18 +187,18 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code" className="font-body">
-                    Código da Joia
+                    Código de la Joya
                   </Label>
                   <Input id="code" value={formData.code} disabled className="font-body bg-muted" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-body">Categoria</Label>
+                  <Label className="font-body">Categoría</Label>
                   <Select value={formData.category_id} onValueChange={(value) => handleInputChange("category_id", value)}>
                     <SelectTrigger className="font-body">
-                      <SelectValue placeholder="Selecione uma categoria" />
+                      <SelectValue placeholder="Seleccione una categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">Nenhuma categoria</SelectItem>
+                      <SelectItem value="0">Ninguna categoría</SelectItem>
                       {localCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
                           {category.name}
@@ -215,7 +215,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Anel de Ouro 18k"
+                  placeholder="Ej: Anillo de Oro 18k"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   required
@@ -226,7 +226,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="precoCusto" className="font-body">
-                    Preço de Custo *
+                    Precio de Costo *
                   </Label>
                   <Input
                     id="precoCusto"
@@ -241,7 +241,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="precoVenda" className="font-body">
-                    Preço de Venda *
+                    Precio de Venta *
                   </Label>
                   <Input
                     id="precoVenda"
@@ -295,7 +295,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading} className="font-body">
-                  {isLoading ? "Salvando..." : "Salvar Alterações"}
+                  {isLoading ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </DialogFooter>
             </form>

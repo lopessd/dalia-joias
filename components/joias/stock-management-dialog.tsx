@@ -54,7 +54,7 @@ export function StockManagementDialog({
       
       // Validações
       if (quantityNumber <= 0) {
-        throw new Error("Quantidade deve ser maior que zero")
+        throw new Error("La cantidad debe ser mayor que cero")
       }
 
       // Determinar quantidade final baseada no tipo
@@ -67,8 +67,8 @@ export function StockManagementDialog({
       })
 
       toast({
-        title: "Sucesso!",
-        description: `${movementType === "entrada" ? "Entrada" : "Saída"} registrada com sucesso.`,
+        title: "¡Éxito!",
+        description: `${movementType === "entrada" ? "Entrada" : "Salida"} registrada con éxito.`,
       })
 
       onOpenChange(false)
@@ -81,8 +81,8 @@ export function StockManagementDialog({
     } catch (error: any) {
       console.error('Erro ao registrar movimentação:', error)
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao registrar movimentação. Tente novamente.",
+        title: "Error",
+        description: error.message || "Error al registrar movimiento. Intente nuevamente.",
         variant: "destructive"
       })
     } finally {
@@ -96,10 +96,10 @@ export function StockManagementDialog({
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             <Package className="w-5 h-5" />
-            Gerenciar Estoque
+            Gestionar Inventario
           </DialogTitle>
           <DialogDescription className="font-body">
-            Registre uma entrada ou saída de estoque para este produto
+            Registre una entrada o salida de inventario para este producto
           </DialogDescription>
         </DialogHeader>
 
@@ -113,7 +113,7 @@ export function StockManagementDialog({
                   Código: {joia.code}
                 </p>
                 <p className="text-xs text-muted-foreground font-body">
-                  Categoria: {joia.category?.name || 'Sem categoria'}
+                  Categoría: {joia.category?.name || 'Sin categoría'}
                 </p>
               </div>
             </CardContent>
@@ -121,7 +121,7 @@ export function StockManagementDialog({
 
           {/* Tipo de Movimentação */}
           <div className="space-y-3">
-            <Label className="font-body font-medium">Tipo de Movimentação *</Label>
+            <Label className="font-body font-medium">Tipo de Movimiento *</Label>
             <RadioGroup
               value={movementType}
               onValueChange={(value: "entrada" | "saida") => setMovementType(value)}
@@ -130,14 +130,14 @@ export function StockManagementDialog({
                 <RadioGroupItem value="entrada" id="entrada" />
                 <Label htmlFor="entrada" className="font-body flex items-center gap-2 cursor-pointer">
                   <ArrowUp className="w-4 h-4 text-green-600" />
-                  Entrada de Estoque
+                  Entrada de Inventario
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="saida" id="saida" />
                 <Label htmlFor="saida" className="font-body flex items-center gap-2 cursor-pointer">
                   <ArrowDown className="w-4 h-4 text-red-600" />
-                  Saída de Estoque
+                  Salida de Inventario
                 </Label>
               </div>
             </RadioGroup>
@@ -146,31 +146,31 @@ export function StockManagementDialog({
           {/* Quantidade */}
           <div className="space-y-2">
             <Label htmlFor="quantity" className="font-body font-medium">
-              Quantidade *
+              Cantidad *
             </Label>
             <Input
               id="quantity"
               type="number"
               min="1"
-              placeholder="Digite a quantidade"
+              placeholder="Ingrese la cantidad"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
               className="font-body"
             />
             <p className="text-xs text-muted-foreground font-body">
-              Informe a quantidade de peças para {movementType === "entrada" ? "entrada" : "saída"}
+              Informe la cantidad de piezas para {movementType === "entrada" ? "entrada" : "salida"}
             </p>
           </div>
 
           {/* Motivo */}
           <div className="space-y-2">
             <Label htmlFor="reason" className="font-body font-medium">
-              Motivo da Movimentação *
+              Motivo del Movimiento *
             </Label>
             <Textarea
               id="reason"
-              placeholder={`Descreva o motivo da ${movementType}...`}
+              placeholder={`Describa el motivo de la ${movementType}...`}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               required
@@ -196,7 +196,7 @@ export function StockManagementDialog({
               disabled={isLoading}
               className="font-body"
             >
-              {isLoading ? "Registrando..." : `Registrar ${movementType === "entrada" ? "Entrada" : "Saída"}`}
+              {isLoading ? "Registrando..." : `Registrar ${movementType === "entrada" ? "Entrada" : "Salida"}`}
             </Button>
           </DialogFooter>
         </form>

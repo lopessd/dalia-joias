@@ -20,10 +20,8 @@ export function RouteGuard({ children, allowedRoles, redirectTo = "/" }: RouteGu
     // Prevent multiple redirects
     if (hasRedirected || isLoading) return
 
-    let redirectTimeout: NodeJS.Timeout
-
     // Debounce navigation to prevent rapid redirects
-    redirectTimeout = setTimeout(() => {
+    const redirectTimeout = setTimeout(() => {
       // If not authenticated, redirect to login
       if (!user) {
         setHasRedirected(true)

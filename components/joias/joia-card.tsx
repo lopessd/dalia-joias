@@ -25,10 +25,7 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
   const [stockMovementType, setStockMovementType] = useState<"entrada" | "saida" | "envio">("entrada")
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   const getStatusColor = (active: boolean) => {
@@ -38,7 +35,7 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
   }
 
   const getStatusText = (active: boolean) => {
-    return active ? "Ativo" : "Inativo"
+    return active ? "Activo" : "Inactivo"
   }
 
   const handleStockMovement = (type: "entrada" | "saida" | "envio") => {
@@ -59,11 +56,11 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground font-body">Código: {joia.code}</p>
-              <p className="text-sm text-muted-foreground font-body">{joia.category?.name || 'Sem categoria'}</p>
+              <p className="text-sm text-muted-foreground font-body">{joia.category?.name || 'Sin categoría'}</p>
               <div className="flex items-center gap-1 mt-1">
                 <Package className="w-4 h-4 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground font-body">
-                  Estoque: {joia.current_stock || 0} unidades
+                  Stock: {joia.current_stock || 0} unidades
                 </p>
               </div>
             </div>
@@ -76,21 +73,21 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="font-body">
                   <Edit className="mr-2 h-4 w-4" />
-                  Editar Joia
+                  Editar Joya
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setIsStockManagementDialogOpen(true)} 
                   className="font-body"
                 >
                   <Package className="mr-2 h-4 w-4" />
-                  Gerenciar Estoque
+                  Gestionar Stock
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setIsDeleteDialogOpen(true)}
                   className="font-body text-destructive focus:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
+                  Eliminar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -107,11 +104,11 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-xs text-muted-foreground font-body">Custo</p>
+                <p className="text-xs text-muted-foreground font-body">Costo</p>
                 <p className="text-sm font-heading text-foreground">{formatCurrency(joia.cost_price)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-body">Venda</p>
+                <p className="text-xs text-muted-foreground font-body">Venta</p>
                 <p className="text-sm font-heading text-foreground">
                   {joia.selling_price ? formatCurrency(joia.selling_price) : 'N/A'}
                 </p>

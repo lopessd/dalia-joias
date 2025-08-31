@@ -5,10 +5,10 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Filter, Calendar, Package, Send } from "lucide-react"
+import { Filter, Calendar, Package, Send, X } from "lucide-react"
 import { HistoricoRecebimentoCard } from "@/components/revendedor/historico-recebimento-card"
 
-// Mock data - histórico de mostruários recebidos
+// Mock data - historial de muestrarios recibidos
 const mockHistorico = [
   {
     id: "M001",
@@ -76,9 +76,9 @@ export default function RevendedorHistoricoPage() {
   const valorTotalRecebido = mockHistorico.reduce((sum, item) => sum + item.valorTotal, 0)
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
+    return new Intl.NumberFormat("es-PY", {
       style: "currency",
-      currency: "BRL",
+      currency: "PYG",
     }).format(value)
   }
 
@@ -90,31 +90,31 @@ export default function RevendedorHistoricoPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-heading text-foreground mb-2">Histórico de Recebimentos</h1>
-            <p className="text-muted-foreground font-body">Todos os mostruários que você recebeu</p>
+            <h1 className="text-3xl font-heading text-foreground mb-2">Historial de Recepciones</h1>
+            <p className="text-muted-foreground font-body">Todos los muestrarios que has recibido</p>
           </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Total de Recebimentos</CardTitle>
+                <CardTitle className="text-sm font-body text-muted-foreground">Total de Recepciones</CardTitle>
                 <Send className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-foreground">{totalRecebimentos}</div>
-                <p className="text-xs text-muted-foreground font-body">mostruários recebidos</p>
+                <p className="text-xs text-muted-foreground font-body">muestrarios recibidos</p>
               </CardContent>
             </Card>
 
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Peças Recebidas</CardTitle>
+                <CardTitle className="text-sm font-body text-muted-foreground">Piezas Recibidas</CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-foreground">{totalPecasRecebidas}</div>
-                <p className="text-xs text-muted-foreground font-body">total de peças</p>
+                <p className="text-xs text-muted-foreground font-body">total de piezas</p>
               </CardContent>
             </Card>
 
@@ -125,7 +125,7 @@ export default function RevendedorHistoricoPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-foreground">{formatCurrency(valorTotalRecebido)}</div>
-                <p className="text-xs text-muted-foreground font-body">valor recebido</p>
+                <p className="text-xs text-muted-foreground font-body">valor recibido</p>
               </CardContent>
             </Card>
           </div>
@@ -135,14 +135,14 @@ export default function RevendedorHistoricoPage() {
             <CardHeader>
               <CardTitle className="font-heading text-foreground flex items-center gap-2">
                 <Filter className="w-4 h-4" />
-                Filtros por Data
+                Filtros por Fecha
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dataInicio" className="font-body">
-                    Data Início
+                    Fecha Inicio
                   </Label>
                   <Input
                     id="dataInicio"
@@ -159,7 +159,7 @@ export default function RevendedorHistoricoPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dataFim" className="font-body">
-                    Data Fim
+                    Fecha Fin
                   </Label>
                   <Input
                     id="dataFim"
@@ -178,9 +178,11 @@ export default function RevendedorHistoricoPage() {
                   <button
                     type="button"
                     onClick={() => setDateFilters({ dataInicio: "", dataFim: "" })}
-                    className="px-4 py-2 text-sm font-body border border-border rounded-md hover:bg-muted transition-colors"
+                    className="px-4 py-2 text-sm font-body border border-border rounded-md hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={dateFilters.dataInicio === "" && dateFilters.dataFim === ""}
                   >
-                    Limpar Filtros
+                    <X className="w-4 h-4" />
+                    Limpiar Filtros
                   </button>
                 </div>
               </div>
@@ -198,11 +200,11 @@ export default function RevendedorHistoricoPage() {
             <Card className="border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Send className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-heading text-foreground mb-2">Nenhum recebimento encontrado</h3>
+                <h3 className="text-lg font-heading text-foreground mb-2">Ninguna recepción encontrada</h3>
                 <p className="text-muted-foreground font-body text-center">
                   {dateFilters.dataInicio || dateFilters.dataFim
-                    ? "Tente ajustar os filtros de data."
-                    : "Você ainda não recebeu nenhum mostruário."}
+                    ? "Intenta ajustar los filtros de fecha."
+                    : "Aún no has recibido ningún muestrario."}
                 </p>
               </CardContent>
             </Card>

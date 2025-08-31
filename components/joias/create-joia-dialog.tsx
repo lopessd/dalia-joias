@@ -69,8 +69,8 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
       // Validar campos obrigatórios
       if (!formData.code || !formData.name || !formData.cost_price) {
         toast({
-          title: "Erro",
-          description: "Preencha todos os campos obrigatórios",
+          title: "Error",
+          description: "Complete todos los campos obligatorios",
           variant: "destructive"
         })
         return
@@ -92,8 +92,8 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
       }
 
       toast({
-        title: "Sucesso",
-        description: "Joia criada com sucesso!",
+        title: "Éxito",
+        description: "¡Joya creada con éxito!",
         variant: "default"
       })
 
@@ -106,7 +106,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
       console.error('Erro ao criar joia:', error)
       const errorMessage = handleSupabaseError(error)
       toast({
-        title: "Erro",
+        title: "Error",
         description: errorMessage,
         variant: "destructive"
       })
@@ -131,13 +131,13 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
   }
 
   const addFoto = () => {
-    const url = prompt("Digite a URL da imagem:")
+    const url = prompt("Ingrese la URL de la imagen:")
     if (url && validateImageUrl(url)) {
       setFotos((prev) => [...prev, url])
     } else if (url) {
       toast({
         title: "URL inválida",
-        description: "Por favor, insira uma URL de imagem válida",
+        description: "Por favor, ingrese una URL de imagen válida",
         variant: "destructive"
       })
     }
@@ -151,18 +151,18 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Criar Nova Joia</DialogTitle>
+          <DialogTitle className="font-heading">Crear Nueva Joya</DialogTitle>
           <DialogDescription className="font-body">
-            Preencha os dados da nova joia para adicionar ao estoque.
+            Complete los datos de la nueva joya para agregar al inventario.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="joia" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="joia">Dados da Joia</TabsTrigger>
+            <TabsTrigger value="joia">Datos de la Joya</TabsTrigger>
             <TabsTrigger value="categorias">
               <Settings className="w-4 h-4 mr-2" />
-              Gerenciar Categorias
+              Gestionar Categorías
             </TabsTrigger>
           </TabsList>
 
@@ -171,11 +171,11 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code" className="font-body">
-                    Código da Joia *
+                    Código de la Joya *
                   </Label>
                   <Input
                     id="code"
-                    placeholder="Ex: AN001"
+                    placeholder="Ej: AN001"
                     value={formData.code}
                     onChange={(e) => handleInputChange("code", e.target.value)}
                     required
@@ -183,13 +183,13 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-body">Categoria</Label>
+                  <Label className="font-body">Categoría</Label>
                   <Select value={formData.category_id} onValueChange={(value) => handleInputChange("category_id", value)}>
                     <SelectTrigger className="font-body">
-                      <SelectValue placeholder="Selecione uma categoria" />
+                      <SelectValue placeholder="Seleccione una categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">Nenhuma categoria</SelectItem>
+                      <SelectItem value="0">Ninguna categoría</SelectItem>
                       {localCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
                           {category.name}
@@ -206,7 +206,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Anel de Ouro 18k"
+                  placeholder="Ej: Anillo de Oro 18k"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   required
@@ -217,7 +217,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cost_price" className="font-body">
-                    Preço de Custo *
+                    Precio de Costo *
                   </Label>
                   <Input
                     id="cost_price"
@@ -232,7 +232,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="selling_price" className="font-body">
-                    Preço de Venda
+                    Precio de Venta
                   </Label>
                   <Input
                     id="selling_price"
@@ -279,7 +279,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground font-body">Adicione até 4 fotos da joia</p>
+                <p className="text-xs text-muted-foreground font-body">Agregue hasta 4 fotos de la joya</p>
               </div>
 
               <DialogFooter>
@@ -287,7 +287,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading} className="font-body">
-                  {isLoading ? "Criando..." : "Criar Joia"}
+                  {isLoading ? "Creando..." : "Crear Joya"}
                 </Button>
               </DialogFooter>
             </form>
@@ -305,7 +305,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                 onClick={() => onOpenChange(false)} 
                 className="font-body"
               >
-                Fechar
+                Cerrar
               </Button>
             </div>
           </TabsContent>

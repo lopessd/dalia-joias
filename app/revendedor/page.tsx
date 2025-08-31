@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth/auth-context"
 
-export default function AdminPage() {
+export default function RevendedorPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
 
@@ -13,12 +13,12 @@ export default function AdminPage() {
       if (!user) {
         // Not authenticated - redirect to login
         router.push('/')
-      } else if (user.role === 'admin') {
-        // Admin user - redirect to joias
-        router.push('/admin/joias')
       } else if (user.role === 'revendedor') {
-        // Revendedor trying to access admin - redirect to their joias
+        // Revendedor user - redirect to joias
         router.push('/revendedor/joias')
+      } else if (user.role === 'admin') {
+        // Admin trying to access revendedor - redirect to their joias
+        router.push('/admin/joias')
       } else {
         // Unknown role - redirect to login
         router.push('/')

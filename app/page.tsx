@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Gem, Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-context"
 
 export default function LoginPage() {
@@ -48,7 +48,10 @@ export default function LoginPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground font-body">Cargando...</p>
+        </div>
       </div>
     )
   }
@@ -57,7 +60,10 @@ export default function LoginPage() {
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground font-body">Cargando...</p>
+        </div>
       </div>
     )
   }
@@ -70,14 +76,14 @@ export default function LoginPage() {
             <img src="/dalia-icon.png" alt="Dalia Joyas" className="w-12 h-12 object-contain rounded" />
           </div>
           <h1 className="text-3xl font-heading text-foreground mb-2">Dalia Joyas</h1>
-          <p className="text-muted-foreground font-body">Faça login para acessar sua conta</p>
+          <p className="text-muted-foreground font-body">Ingresá a tu cuenta para continuar</p>
         </div>
 
         <Card className="border-border shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-heading text-center">Login</CardTitle>
+            <CardTitle className="text-2xl font-heading text-center">Iniciar Sesión</CardTitle>
             <CardDescription className="text-center font-body">
-              Digite suas credenciais para acessar o sistema
+              Ingresá tus credenciales para acceder al sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -89,7 +95,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="seu@email.com"
+                  placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -98,13 +104,13 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="font-body">
-                  Senha
+                  Contraseña
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
+                    placeholder="Ingresá tu contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -126,7 +132,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full font-body" disabled={isSubmitting}>
-                {isSubmitting ? "Entrando..." : "Entrar"}
+                {isSubmitting ? "Ingresando..." : "Ingresar"}
               </Button>
             </form>
 

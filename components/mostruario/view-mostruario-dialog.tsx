@@ -34,14 +34,11 @@ interface ViewMostruarioDialogProps {
 
 export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMostruarioDialogProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
+    return new Date(dateString).toLocaleDateString("es-PY")
   }
 
   const getStatusColor = (status: string) => {
@@ -62,7 +59,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
       case "enviado":
         return "Enviado"
       case "pendente":
-        return "Pendente"
+        return "Pendiente"
       case "cancelado":
         return "Cancelado"
       default:
@@ -103,7 +100,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
               <CardHeader>
                 <CardTitle className="font-heading text-foreground flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  Revendedor
+                  Distribuidor
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -116,7 +113,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
               <CardHeader>
                 <CardTitle className="font-heading text-foreground flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Data de Envio
+                  Fecha de Envío
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -131,7 +128,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
               <CardContent className="p-4 text-center">
                 <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-2xl font-heading text-foreground">{mostruario.quantidadePecas}</p>
-                <p className="text-sm text-muted-foreground font-body">Total de Peças</p>
+                <p className="text-sm text-muted-foreground font-body">Total de Piezas</p>
               </CardContent>
             </Card>
 
@@ -139,7 +136,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
               <CardContent className="p-4 text-center">
                 <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-2xl font-heading text-foreground">{mostruario.quantidadeProdutos}</p>
-                <p className="text-sm text-muted-foreground font-body">Produtos Diferentes</p>
+                <p className="text-sm text-muted-foreground font-body">Productos Diferentes</p>
               </CardContent>
             </Card>
 
@@ -155,7 +152,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
           {/* Products List */}
           <Card className="border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-foreground">Lista Detalhada de Produtos</CardTitle>
+              <CardTitle className="font-heading text-foreground">Lista Detallada de Productos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -168,7 +165,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
                       <h4 className="font-heading text-foreground">{produto.joiaNome}</h4>
                       <p className="text-sm text-muted-foreground font-body">Código: {produto.joiaId}</p>
                       <p className="text-sm text-muted-foreground font-body">
-                        Preço unitário: {formatCurrency(produto.precoVenda)}
+                        Precio unitario: {formatCurrency(produto.precoVenda)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -184,7 +181,7 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
               {/* Total */}
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex justify-between items-center">
-                  <p className="text-lg font-heading text-foreground">Total Geral:</p>
+                  <p className="text-lg font-heading text-foreground">Total General:</p>
                   <p className="text-xl font-heading text-primary">{formatCurrency(mostruario.valorTotal)}</p>
                 </div>
               </div>

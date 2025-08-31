@@ -29,10 +29,10 @@ export function LogoutConfirmDialog({ open, onOpenChange, onConfirm }: LogoutCon
             </div>
             <div>
               <AlertDialogTitle className="text-xl font-heading">
-                Confirmar Logout
+                Confirmar Cierre de Sesión
               </AlertDialogTitle>
               <AlertDialogDescription className="font-body mt-1">
-                Tem certeza que deseja sair do sistema?
+                ¿Estás seguro que deseas salir del sistema?
               </AlertDialogDescription>
             </div>
           </div>
@@ -46,7 +46,7 @@ export function LogoutConfirmDialog({ open, onOpenChange, onConfirm }: LogoutCon
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-body"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sair
+            Salir
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,54 +1,70 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useUserProfile } from "@/hooks/use-user-profile"
 import { User, Lock, Save } from "lucide-react"
 
 export default function RevendedorPerfilPage() {
   const { toast } = useToast()
-  const [profileData, setProfileData] = useState({
-    nome: "Maria Silva",
-    email: "maria.silva@email.com",
-  })
-
+  const { profileData, isLoading: profileLoading, updateProfile, updatePassword } = useUserProfile()
+  
+  const [nome, setNome] = useState("")
   const [passwordData, setPasswordData] = useState({
     senhaAtual: "",
     novaSenha: "",
     confirmarSenha: "",
   })
+  
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
-  const [isLoadingPassword, setIsLoadingPassword] = useState(false)
+  // Update local name when profile data loads
+  useEffect(() => {
+    if (profileData?.name && nome === "") {
+      setNome(profileData.name)
+    }
+  }, [profileData, nome])
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoadingProfile(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Perfil atualizado:", profileData)
-      setIsLoadingProfile(false)
+    
+    if (!nome.trim()) {
       toast({
-        title: "Perfil atualizado",
-        description: "Suas informações foram atualizadas com sucesso.",
+        title: "Error",
+        description: "El nombre es requerido.",
+        variant: "destructive",
       })
-    }, 1000)
+      return
+    }
+
+    setIsUpdatingProfile(true)
+    await updateProfile(nome.trim())
+    setIsUpdatingProfile(false)
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate password fields
+    if (!passwordData.novaSenha || !passwordData.confirmarSenha) {
+      toast({
+        title: "Error",
+        description: "Todos los campos de contraseña son requeridos.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (passwordData.novaSenha !== passwordData.confirmarSenha) {
       toast({
-        title: "Erro",
-        description: "As senhas não coincidem.",
+        title: "Error",
+        description: "Las contraseñas no coinciden.",
         variant: "destructive",
       })
       return
@@ -56,37 +72,53 @@ export default function RevendedorPerfilPage() {
 
     if (passwordData.novaSenha.length < 6) {
       toast({
-        title: "Erro",
-        description: "A nova senha deve ter pelo menos 6 caracteres.",
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres.",
         variant: "destructive",
       })
       return
     }
 
-    setIsLoadingPassword(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Senha alterada")
-      setIsLoadingPassword(false)
+    setIsUpdatingPassword(true)
+    const success = await updatePassword(passwordData.novaSenha)
+    
+    if (success) {
+      // Clear password fields on success
       setPasswordData({
         senhaAtual: "",
         novaSenha: "",
         confirmarSenha: "",
       })
-      toast({
-        title: "Senha alterada",
-        description: "Sua senha foi alterada com sucesso.",
-      })
-    }, 1000)
+    }
+    
+    setIsUpdatingPassword(false)
   }
 
   const handleProfileInputChange = (field: string, value: string) => {
-    setProfileData((prev) => ({ ...prev, [field]: value }))
+    if (field === "nome") {
+      setNome(value)
+    }
   }
 
   const handlePasswordInputChange = (field: string, value: string) => {
     setPasswordData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Show loading state while profile is loading
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar userType="revendedor" />
+        <main className="flex-1 md:ml-64 p-4 md:p-8 pt-16 md:pt-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-heading text-foreground mb-2">Mi Perfil</h1>
+              <p className="text-muted-foreground font-body">Cargando información...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -97,29 +129,29 @@ export default function RevendedorPerfilPage() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-heading text-foreground mb-2">Meu Perfil</h1>
-            <p className="text-muted-foreground font-body">Gerencie suas informações pessoais e senha</p>
+            <h1 className="text-3xl font-heading text-foreground mb-2">Mi Perfil</h1>
+            <p className="text-muted-foreground font-body">Gestiona tu información personal y contraseña</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Profile Information */}
-            <Card className="border-border">
+            <Card className="border-border flex flex-col">
               <CardHeader>
                 <CardTitle className="font-heading text-foreground flex items-center gap-2">
                   <User className="w-5 h-5" />
-                  Informações Pessoais
+                  Información Personal
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileSubmit} className="space-y-4">
+              <CardContent className="flex-1 flex flex-col">
+                <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="nome" className="font-body">
-                      Nome Completo *
+                      Nombre Completo *
                     </Label>
                     <Input
                       id="nome"
-                      placeholder="Digite seu nome completo"
-                      value={profileData.nome}
+                      placeholder="Ingresa tu nombre completo"
+                      value={nome}
                       onChange={(e) => handleProfileInputChange("nome", e.target.value)}
                       required
                       className="font-body"
@@ -130,16 +162,26 @@ export default function RevendedorPerfilPage() {
                     <Label htmlFor="email" className="font-body">
                       Email
                     </Label>
-                    <Input id="email" type="email" value={profileData.email} disabled className="font-body bg-muted" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={profileData?.email || ""} 
+                      disabled 
+                      className="font-body bg-muted text-muted-foreground" 
+                    />
                     <p className="text-xs text-muted-foreground font-body">
-                      O email não pode ser alterado. Entre em contato com o administrador se necessário.
+                      El correo electrónico no se puede cambiar. Contacta al administrador si es necesario.
                     </p>
                   </div>
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isLoadingProfile} className="gap-2 font-body">
+                  <div className="mt-auto">
+                    <Button 
+                      type="submit" 
+                      disabled={isUpdatingProfile || profileLoading} 
+                      className="w-full gap-2 font-body"
+                    >
                       <Save className="w-4 h-4" />
-                      {isLoadingProfile ? "Salvando..." : "Salvar Alterações"}
+                      {isUpdatingProfile ? "Guardando..." : "Guardar Cambios"}
                     </Button>
                   </div>
                 </form>
@@ -147,23 +189,23 @@ export default function RevendedorPerfilPage() {
             </Card>
 
             {/* Password Change */}
-            <Card className="border-border">
+            <Card className="border-border flex flex-col">
               <CardHeader>
                 <CardTitle className="font-heading text-foreground flex items-center gap-2">
                   <Lock className="w-5 h-5" />
-                  Alterar Senha
+                  Cambiar Contraseña
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <CardContent className="flex-1 flex flex-col">
+                <form onSubmit={handlePasswordSubmit} className="flex-1 flex flex-col space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="senhaAtual" className="font-body">
-                      Senha Atual *
+                      Contraseña Actual *
                     </Label>
                     <Input
                       id="senhaAtual"
                       type="password"
-                      placeholder="Digite sua senha atual"
+                      placeholder="Ingresa tu contraseña actual"
                       value={passwordData.senhaAtual}
                       onChange={(e) => handlePasswordInputChange("senhaAtual", e.target.value)}
                       required
@@ -173,29 +215,29 @@ export default function RevendedorPerfilPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="novaSenha" className="font-body">
-                      Nova Senha *
+                      Nueva Contraseña *
                     </Label>
                     <Input
                       id="novaSenha"
                       type="password"
-                      placeholder="Digite sua nova senha"
+                      placeholder="Ingresa tu nueva contraseña"
                       value={passwordData.novaSenha}
                       onChange={(e) => handlePasswordInputChange("novaSenha", e.target.value)}
                       required
                       minLength={6}
                       className="font-body"
                     />
-                    <p className="text-xs text-muted-foreground font-body">A senha deve ter pelo menos 6 caracteres.</p>
+                    <p className="text-xs text-muted-foreground font-body">La contraseña debe tener al menos 6 caracteres.</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="confirmarSenha" className="font-body">
-                      Confirmar Nova Senha *
+                      Confirmar Nueva Contraseña *
                     </Label>
                     <Input
                       id="confirmarSenha"
                       type="password"
-                      placeholder="Confirme sua nova senha"
+                      placeholder="Confirma tu nueva contraseña"
                       value={passwordData.confirmarSenha}
                       onChange={(e) => handlePasswordInputChange("confirmarSenha", e.target.value)}
                       required
@@ -203,10 +245,14 @@ export default function RevendedorPerfilPage() {
                     />
                   </div>
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isLoadingPassword} className="gap-2 font-body">
+                  <div className="mt-auto">
+                    <Button 
+                      type="submit" 
+                      disabled={isUpdatingPassword || profileLoading} 
+                      className="w-full gap-2 font-body"
+                    >
                       <Lock className="w-4 h-4" />
-                      {isLoadingPassword ? "Alterando..." : "Alterar Senha"}
+                      {isUpdatingPassword ? "Cambiando..." : "Cambiar Contraseña"}
                     </Button>
                   </div>
                 </form>

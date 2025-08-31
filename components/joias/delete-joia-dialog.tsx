@@ -33,8 +33,8 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: Delete
       await hardDeleteProduct(joia.id) // Exclusão real do banco de dados
       
       toast({
-        title: "Sucesso",
-        description: "Joia excluída com sucesso!",
+        title: "Éxito",
+        description: "¡Joya eliminada con éxito!",
         variant: "default"
       })
 
@@ -45,7 +45,7 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: Delete
       console.error('Erro ao excluir joia:', error)
       const errorMessage = handleSupabaseError(error)
       toast({
-        title: "Erro",
+        title: "Error",
         description: errorMessage,
         variant: "destructive"
       })
@@ -60,15 +60,15 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: Delete
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2 text-destructive">
             <AlertTriangle className="w-5 h-5" />
-            Excluir Joia
+            Eliminar Joya
           </DialogTitle>
           <DialogDescription className="font-body">
-            Esta ação não pode ser desfeita. A joia e todas as suas movimentações de estoque serão permanentemente removidas do sistema.
+            Esta acción no se puede deshacer. La joya y todos sus movimientos de inventario serán eliminados permanentemente del sistema.
           </DialogDescription>
         </DialogHeader>        <div className="p-4 bg-muted rounded-lg">
           <h4 className="font-heading text-sm text-foreground mb-2">{joia.name}</h4>
           <p className="text-xs text-muted-foreground font-body">Código: {joia.code}</p>
-          <p className="text-xs text-muted-foreground font-body">Categoria: {joia.category?.name || 'Sem categoria'}</p>
+          <p className="text-xs text-muted-foreground font-body">Categoría: {joia.category?.name || 'Sin categoría'}</p>
         </div>
 
         <DialogFooter>
@@ -76,7 +76,7 @@ export function DeleteJoiaDialog({ open, onOpenChange, joia, onSuccess }: Delete
             Cancelar
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="font-body">
-            {isLoading ? "Excluindo..." : "Excluir Joia"}
+            {isLoading ? "Eliminando..." : "Eliminar Joya"}
           </Button>
         </DialogFooter>
       </DialogContent>

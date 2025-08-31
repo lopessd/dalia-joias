@@ -62,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={inter.variable}>
+    <html lang="es-PY" className={inter.variable}>
       <head>
         {/* iOS Specific Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

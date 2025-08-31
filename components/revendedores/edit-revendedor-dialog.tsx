@@ -67,7 +67,7 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
 
     // Simulate API call
     setTimeout(() => {
-      console.log("Revendedor editado:", { id: revendedor.id, ...formData })
+      console.log("Distribuidor editado:", { id: revendedor.id, ...formData })
       setIsLoading(false)
       onOpenChange(false)
     }, 1000)
@@ -81,9 +81,9 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Editar Revendedor</DialogTitle>
+          <DialogTitle className="font-heading">Editar Distribuidor</DialogTitle>
           <DialogDescription className="font-body">
-            Edite os dados do revendedor. O email não pode ser alterado.
+            Edite los datos del distribuidor. El email no se puede cambiar.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,11 +91,11 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nome" className="font-body">
-                Nome Completo *
+                Nombre Completo *
               </Label>
               <Input
                 id="nome"
-                placeholder="Ex: Maria Silva"
+                placeholder="Ej: María Silva"
                 value={formData.nome}
                 onChange={(e) => handleInputChange("nome", e.target.value)}
                 required
@@ -113,11 +113,11 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="telefone" className="font-body">
-                Telefone *
+                Teléfono *
               </Label>
               <Input
                 id="telefone"
-                placeholder="(11) 99999-9999"
+                placeholder="+595 971 123456"
                 value={formData.telefone}
                 onChange={(e) => handleInputChange("telefone", e.target.value)}
                 required
@@ -125,14 +125,14 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-body">Status</Label>
+              <Label className="font-body">Estado</Label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                 <SelectTrigger className="font-body">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="ativo">Activo</SelectItem>
+                  <SelectItem value="inativo">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -140,11 +140,11 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
 
           <div className="space-y-2">
             <Label htmlFor="endereco" className="font-body">
-              Endereço Completo *
+              Dirección Completa *
             </Label>
             <Input
               id="endereco"
-              placeholder="Rua, número, bairro, cidade, estado"
+              placeholder="Calle, número, barrio, ciudad, departamento"
               value={formData.endereco}
               onChange={(e) => handleInputChange("endereco", e.target.value)}
               required
@@ -154,11 +154,11 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
 
           <div className="space-y-2">
             <Label htmlFor="descricao" className="font-body">
-              Descrição
+              Descripción
             </Label>
             <Textarea
               id="descricao"
-              placeholder="Descreva o perfil do revendedor, especialidades, etc..."
+              placeholder="Describa el perfil del distribuidor, especialidades, etc..."
               value={formData.descricao}
               onChange={(e) => handleInputChange("descricao", e.target.value)}
               rows={3}
@@ -171,7 +171,7 @@ export function EditRevendedorDialog({ open, onOpenChange, revendedor }: EditRev
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading} className="font-body">
-              {isLoading ? "Salvando..." : "Salvar Alterações"}
+              {isLoading ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </DialogFooter>
         </form>

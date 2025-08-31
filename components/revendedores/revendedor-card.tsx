@@ -32,14 +32,11 @@ export function RevendedorCard({ revendedor }: RevendedorCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
+    return new Date(dateString).toLocaleDateString("es-PY")
   }
 
   const getStatusColor = (status: string) => {
@@ -56,9 +53,9 @@ export function RevendedorCard({ revendedor }: RevendedorCardProps) {
   const getStatusText = (status: string) => {
     switch (status) {
       case "ativo":
-        return "Ativo"
+        return "Activo"
       case "inativo":
-        return "Inativo"
+        return "Inactivo"
       default:
         return status
     }
@@ -94,16 +91,16 @@ export function RevendedorCard({ revendedor }: RevendedorCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="font-body">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar Revendedor
+                                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                  <Edit className="w-3 h-3 mr-2" />
+                  Editar Reseller
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setIsDeleteDialogOpen(true)}
                   className="font-body text-destructive focus:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
+                  Eliminar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -125,7 +122,7 @@ export function RevendedorCard({ revendedor }: RevendedorCardProps) {
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Package className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-body">Peças</span>
+                  <span className="text-xs text-muted-foreground font-body">Piezas</span>
                 </div>
                 <p className="text-lg font-heading text-foreground">{revendedor.quantidadePecas}</p>
               </div>
@@ -141,13 +138,13 @@ export function RevendedorCard({ revendedor }: RevendedorCardProps) {
             {/* Additional Stats */}
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground font-body">Total Vendas</p>
+                <p className="text-xs text-muted-foreground font-body">Total Ventas</p>
                 <p className="text-sm font-heading text-foreground">{revendedor.totalVendas}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Calendar className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-body">Última Venda</span>
+                  <span className="text-xs text-muted-foreground font-body">Última Venta</span>
                 </div>
                 <p className="text-xs font-body text-muted-foreground">{formatDate(revendedor.dataUltimaVenda)}</p>
               </div>

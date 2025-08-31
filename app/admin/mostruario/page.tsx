@@ -91,10 +91,7 @@ export default function MostruarioPage() {
   const mostruariosPendentes = mockMostruarios.filter((m) => m.status === "pendente").length
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   return (
@@ -106,12 +103,12 @@ export default function MostruarioPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-heading text-foreground mb-2">Sistema de Mostruário</h1>
-              <p className="text-muted-foreground font-body">Envio de joias para revendedores</p>
+              <h1 className="text-3xl font-heading text-foreground mb-2">Sistema de Muestrario</h1>
+              <p className="text-muted-foreground font-body">Envío de joyas para distribuidores</p>
             </div>
             <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 font-body">
               <Plus className="w-4 h-4" />
-              Novo Mostruário
+              Nuevo Muestrario
             </Button>
           </div>
 
@@ -119,23 +116,23 @@ export default function MostruarioPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Total de Mostruários</CardTitle>
+                <CardTitle className="text-sm font-body text-muted-foreground">Total de Muestrarios</CardTitle>
                 <Send className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-foreground">{totalMostruarios}</div>
-                <p className="text-xs text-muted-foreground font-body">mostruários criados</p>
+                <p className="text-xs text-muted-foreground font-body">muestrarios creados</p>
               </CardContent>
             </Card>
 
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Peças Enviadas</CardTitle>
+                <CardTitle className="text-sm font-body text-muted-foreground">Piezas Enviadas</CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-foreground">{totalPecasEnviadas.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground font-body">peças distribuídas</p>
+                <p className="text-xs text-muted-foreground font-body">piezas distribuidas</p>
               </CardContent>
             </Card>
 
@@ -152,12 +149,12 @@ export default function MostruarioPage() {
 
             <Card className="border-border border-orange-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Pendentes</CardTitle>
+                <CardTitle className="text-sm font-body text-muted-foreground">Pendientes</CardTitle>
                 <TrendingUp className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-heading text-orange-600">{mostruariosPendentes}</div>
-                <p className="text-xs text-orange-600 font-body">aguardando envio</p>
+                <p className="text-xs text-orange-600 font-body">esperando envío</p>
               </CardContent>
             </Card>
           </div>
@@ -180,7 +177,7 @@ export default function MostruarioPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       id="search"
-                      placeholder="Código ou revendedor..."
+                      placeholder="Código o distribuidor..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 font-body"
@@ -188,13 +185,13 @@ export default function MostruarioPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-body">Revendedor</Label>
+                  <Label className="font-body">Distribuidor</Label>
                   <Select value={selectedRevendedor} onValueChange={setSelectedRevendedor}>
                     <SelectTrigger className="font-body">
-                      <SelectValue placeholder="Selecione um revendedor" />
+                      <SelectValue placeholder="Seleccione un distribuidor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos os revendedores</SelectItem>
+                      <SelectItem value="todos">Todos los distribuidores</SelectItem>
                       {mockRevendedores.map((revendedor) => (
                         <SelectItem key={revendedor.id} value={revendedor.id}>
                           {revendedor.nome}
@@ -205,7 +202,7 @@ export default function MostruarioPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dataInicio" className="font-body">
-                    Data Início
+                    Fecha Inicio
                   </Label>
                   <Input
                     id="dataInicio"
@@ -222,7 +219,7 @@ export default function MostruarioPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dataFim" className="font-body">
-                    Data Fim
+                    Fecha Fin
                   </Label>
                   <Input
                     id="dataFim"
@@ -248,7 +245,7 @@ export default function MostruarioPage() {
                   }}
                   className="font-body"
                 >
-                  Limpar Filtros
+                  Limpiar Filtros
                 </Button>
               </div>
             </CardContent>
@@ -265,11 +262,11 @@ export default function MostruarioPage() {
             <Card className="border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Send className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-heading text-foreground mb-2">Nenhum mostruário encontrado</h3>
+                <h3 className="text-lg font-heading text-foreground mb-2">Ningún muestrario encontrado</h3>
                 <p className="text-muted-foreground font-body text-center">
                   {searchTerm || selectedRevendedor !== "todos"
-                    ? "Tente ajustar os filtros ou criar um novo mostruário."
-                    : "Comece criando seu primeiro mostruário."}
+                    ? "Intente ajustar los filtros o crear un nuevo muestrario."
+                    : "Comience creando su primer muestrario."}
                 </p>
               </CardContent>
             </Card>
