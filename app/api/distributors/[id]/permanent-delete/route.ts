@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Função para obter cliente Supabase admin de forma segura
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Configuração do Supabase incompleta')
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -11,16 +28,7 @@ export async function DELETE(
     console.log('🗑️ PERMANENT-DELETE: Iniciando exclusão permanente do distribuidor:', id)
     
     // Cliente admin do Supabase
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { 
-        auth: { 
-          autoRefreshToken: false, 
-          persistSession: false 
-        } 
-      }
-    )
+    const supabaseAdmin = getSupabaseAdmin()
 
     // Verificar se o distribuidor existe e é realmente um reseller
     const { data: profile, error: profileCheckError } = await supabaseAdmin
