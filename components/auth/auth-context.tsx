@@ -170,28 +170,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (error) {
-        let errorMessage = "Erro de conexão. Tente novamente."
+        let errorMessage = "Error de conexión. Inténtelo de nuevo."
         
         switch (error.message) {
           case 'Invalid login credentials':
           case 'invalid_login_credentials':
-            errorMessage = "Email ou senha incorretos"
+            errorMessage = "Email o contraseña incorrectos"
             break
           case 'Email not confirmed':
-            errorMessage = "Email não confirmado. Verifique sua caixa de entrada."
+            errorMessage = "Email no confirmado. Verifique su bandeja de entrada."
             break
           case 'Too many requests':
           case 'too_many_requests':
-            errorMessage = "Muitas tentativas. Aguarde alguns minutos."
+            errorMessage = "Demasiados intentos. Espere unos minutos."
             break
           default:
             if (error.message.includes('credentials') || error.message.includes('Invalid')) {
-              errorMessage = "Email ou senha incorretos"
+              errorMessage = "Email o contraseña incorrectos"
             }
         }
 
         toast({
-          title: "Erro no login",
+          title: "Error en el login",
           description: errorMessage,
           variant: "destructive",
         })
@@ -210,11 +210,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .single()
 
           if (profileError) {
-            console.error('Erro ao buscar perfil durante login:', profileError)
+            console.error('Error al buscar perfil durante login:', profileError)
             await supabase.auth.signOut()
             toast({
-              title: "Erro no login",
-              description: "Erro ao carregar perfil do usuário.",
+              title: "Error en el login",
+              description: "Error al cargar perfil del usuario.",
               variant: "destructive",
             })
             setIsLoading(false)
@@ -226,8 +226,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.warn('Login negado - conta inativa:', data.user.email)
             await supabase.auth.signOut()
             toast({
-              title: "Acesso Negado",
-              description: "Sua conta está desativada. Entre em contato com o administrador do sistema.",
+              title: "Acceso Denegado",
+              description: "Su cuenta está desactivada. Póngase en contacto con el administrador del sistema.",
               variant: "destructive"
             })
             setIsLoading(false)
@@ -237,17 +237,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Se chegou até aqui, login é válido
           // handleAuthUser será chamado via onAuthStateChange para atualizar o estado
           toast({
-            title: "Sucesso",
-            description: "Login realizado com sucesso!",
+            title: "Éxito",
+            description: "¡Login realizado con éxito!",
           })
           return true
 
         } catch (profileCheckError) {
-          console.error('Erro na verificação do perfil:', profileCheckError)
+          console.error('Error en la verificación del perfil:', profileCheckError)
           await supabase.auth.signOut()
           toast({
-            title: "Erro no login",
-            description: "Erro ao validar perfil do usuário.",
+            title: "Error en el login",
+            description: "Error al validar perfil del usuario.",
             variant: "destructive",
           })
           setIsLoading(false)

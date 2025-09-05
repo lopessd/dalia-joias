@@ -14,11 +14,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Dalia Joyas - Sistema de Gestão",
-  description: "Sistema completo para gestão de joias e revendedores - Dalia Joyas",
+  title: "Dalia Joyas - Sistema de Gestión",
+  description: "Sistema completo para gestión de joyas y distribuidores - Dalia Joyas",
   generator: "v0.app",
   manifest: "/manifest.json",
-  keywords: ["joias", "gestão", "revendedores", "estoque", "bijuterias"],
+  keywords: ["joyas", "gestión", "distribuidores", "stock", "bisutería"],
   authors: [
     {
       name: "Dalia Joyas",

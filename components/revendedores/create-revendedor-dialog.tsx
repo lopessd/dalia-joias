@@ -104,7 +104,7 @@ export function CreateRevendedorDialog({
       
       // Validar campos obrigatórios
       if (!formData.name.trim()) {
-        throw new Error("Nome é obrigatório")
+        throw new Error("Nombre es obligatorio")
       }
       if (!formData.email.trim()) {
         throw new Error("Email é obrigatório")
@@ -126,7 +126,7 @@ export function CreateRevendedorDialog({
       console.log('📝 FORM SUBMIT: Dados preparados para criação:', distributorData)
       console.log('🔧 FORM SUBMIT: Verificando função createDistributor:', typeof createDistributor)
 
-      // Criar distribuidor
+      // Crear distribuidor
       console.log('🔄 FORM SUBMIT: Prestes a chamar createDistributor API...')
       
       if (typeof createDistributor !== 'function') {
@@ -142,7 +142,7 @@ export function CreateRevendedorDialog({
       setShowCreatedPassword(true)
 
       toast({
-        title: "Distribuidor criado com sucesso!",
+        title: "¡Distribuidor creado con éxito!",
         description: `Conta criada para ${result.user.email}. A senha foi gerada automaticamente.`,
       })
 
@@ -152,9 +152,9 @@ export function CreateRevendedorDialog({
       }
 
     } catch (error) {
-      console.error("Erro ao criar distribuidor:", error)
+      console.error("Error al crear distribuidor:", error)
       toast({
-        title: "Erro ao criar distribuidor",
+        title: "Error al crear distribuidor",
         description: error instanceof Error ? error.message : "Ocorreu um erro inesperado",
         variant: "destructive",
       })
@@ -183,9 +183,9 @@ export function CreateRevendedorDialog({
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Criar Novo Distribuidor</DialogTitle>
-          <DialogDescription className="font-body">
-            Complete os dados do novo distribuidor para adicioná-lo ao sistema.
+                    <DialogTitle className="font-heading">Crear Nuevo Distribuidor</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Complete los datos del nuevo distribuidor para agregarlo al sistema.
           </DialogDescription>
         </DialogHeader>
 
@@ -194,7 +194,7 @@ export function CreateRevendedorDialog({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Distribuidor criado com sucesso!</strong>
+                <strong>¡Distribuidor creado con éxito!</strong>
                 <br />
                 A senha foi gerada automaticamente. Anote ou copie a senha abaixo - ela só será exibida uma vez.
               </AlertDescription>
@@ -235,7 +235,7 @@ export function CreateRevendedorDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-body">
-                  Nome Completo *
+                  Nombre Completo *
                 </Label>
                 <Input
                   id="name"
@@ -329,11 +329,11 @@ export function CreateRevendedorDialog({
 
             <div className="space-y-2">
               <Label htmlFor="description" className="font-body">
-                Descrição
+                Descripción
               </Label>
               <Textarea
                 id="description"
-                placeholder="Descreva o perfil do distribuidor, especialidades, etc..."
+                placeholder="Describa el perfil del distribuidor, especialidades, etc..."
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 rows={3}
@@ -356,7 +356,7 @@ export function CreateRevendedorDialog({
                 disabled={isLoading || !!emailError} 
                 className="font-body"
               >
-                {isLoading ? "Criando..." : "Criar Distribuidor"}
+                {isLoading ? "Creando..." : "Crear Distribuidor"}
               </Button>
             </DialogFooter>
           </form>

@@ -148,7 +148,7 @@ export default function RevendedorJoiasPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       id="search"
-                      placeholder="Nome ou código da joia..."
+                      placeholder="Nombre o código de la joya..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 font-body"

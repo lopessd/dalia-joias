@@ -211,7 +211,7 @@ export function EditJoiaDialog({ open, onOpenChange, joia, onSuccess }: EditJoia
 
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-body">
-                  Nome *
+                  Nombre *
                 </Label>
                 <Input
                   id="name"

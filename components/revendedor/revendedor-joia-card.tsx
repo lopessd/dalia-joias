@@ -65,7 +65,7 @@ export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsEditPrecoDialogOpen(true)} className="font-body">
                   <Edit className="mr-2 h-4 w-4" />
-                  Editar Preço
+                  Editar Precio
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -81,11 +81,11 @@ export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
             {/* Pricing Info */}
             <div className="space-y-2 p-3 bg-muted rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground font-body">Custo</span>
+                <span className="text-xs text-muted-foreground font-body">Costo</span>
                 <span className="text-sm font-heading text-foreground">{formatCurrency(joia.precoCusto)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground font-body">Venda</span>
+                <span className="text-xs text-muted-foreground font-body">Venta</span>
                 <span className="text-sm font-heading text-primary">{formatCurrency(joia.precoVenda)}</span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-border">
@@ -98,7 +98,7 @@ export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-body text-muted-foreground">Estoque</span>
+                <span className="text-sm font-body text-muted-foreground">Stock</span>
               </div>
               <span className="text-sm font-heading text-foreground">{joia.quantidade} un</span>
             </div>
