@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-    const handleAuthUser = useCallback(async (supabaseUser: User) => {
+  const handleAuthUser = useCallback(async (supabaseUser: User) => {
     try {
       // Prevent multiple simultaneous calls for the same user
       if (user?.id === supabaseUser.id) {
@@ -58,6 +58,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      // AC1, AC2, AC6: Verificar se distribuidor está ativo
+      if (profile.role === 'reseller' && !profile.active) {
+        // Logout forçado e toast de erro
+        console.warn('Tentativa de acesso com conta inativa:', supabaseUser.email)
+        await supabase.auth.signOut()
+        toast({
+          title: "Acesso Negado",
+          description: "Sua conta está desativada. Entre em contato com o administrador do sistema.",
+          variant: "destructive"
+        })
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+
       const userWithProfile: AuthUser = {
         id: supabaseUser.id,
         email: supabaseUser.email || '',
@@ -71,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setIsLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, toast])
 
   useEffect(() => {
     let isMounted = true
@@ -186,13 +201,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user) {
-        // handleAuthUser will be called via onAuthStateChange
-        // Keep loading true until user state is updated
-        toast({
-          title: "Sucesso",
-          description: "Login realizado com sucesso!",
-        })
-        return true
+        // AC1, AC2, AC6: Verificar perfil ativo ANTES de retornar sucesso
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single()
+
+          if (profileError) {
+            console.error('Erro ao buscar perfil durante login:', profileError)
+            await supabase.auth.signOut()
+            toast({
+              title: "Erro no login",
+              description: "Erro ao carregar perfil do usuário.",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return false
+          }
+
+          // Verificar se distribuidor está ativo
+          if (profile.role === 'reseller' && !profile.active) {
+            console.warn('Login negado - conta inativa:', data.user.email)
+            await supabase.auth.signOut()
+            toast({
+              title: "Acesso Negado",
+              description: "Sua conta está desativada. Entre em contato com o administrador do sistema.",
+              variant: "destructive"
+            })
+            setIsLoading(false)
+            return false
+          }
+
+          // Se chegou até aqui, login é válido
+          // handleAuthUser será chamado via onAuthStateChange para atualizar o estado
+          toast({
+            title: "Sucesso",
+            description: "Login realizado com sucesso!",
+          })
+          return true
+
+        } catch (profileCheckError) {
+          console.error('Erro na verificação do perfil:', profileCheckError)
+          await supabase.auth.signOut()
+          toast({
+            title: "Erro no login",
+            description: "Erro ao validar perfil do usuário.",
+            variant: "destructive",
+          })
+          setIsLoading(false)
+          return false
+        }
       }
 
       setIsLoading(false)

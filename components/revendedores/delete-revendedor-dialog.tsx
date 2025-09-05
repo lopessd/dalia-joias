@@ -10,87 +10,148 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle } from "lucide-react"
-
-interface Revendedor {
-  id: string
-  nome: string
-  email: string
-  telefone: string
-  endereco: string
-  descricao: string
-  quantidadePecas: number
-  valorTotalPecas: number
-  status: string
-  dataUltimaVenda: string
-  totalVendas: number
-}
+import { useToast } from "@/hooks/use-toast"
+import { deactivateDistributor, reactivateDistributor, type DistributorProfile } from "@/lib/distributors-api"
+import { AlertTriangle, UserX, UserCheck } from "lucide-react"
 
 interface DeleteRevendedorDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  revendedor: Revendedor
+  distributor: DistributorProfile | null
+  onDistributorUpdated?: () => void
 }
 
-export function DeleteRevendedorDialog({ open, onOpenChange, revendedor }: DeleteRevendedorDialogProps) {
+export function DeleteRevendedorDialog({ 
+  open, 
+  onOpenChange, 
+  distributor, 
+  onDistributorUpdated 
+}: DeleteRevendedorDialogProps) {
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-PY", {
-      style: "currency",
-      currency: "PYG",
-    }).format(value)
-  }
+  if (!distributor) return null
 
-  const handleDelete = async () => {
+  const isActive = distributor.active
+  const actionText = isActive ? "Desativar" : "Reativar"
+  const actionPastText = isActive ? "desativado" : "reativado"
+
+  const handleAction = async () => {
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Distribuidor eliminado:", revendedor.id)
-      setIsLoading(false)
+    try {
+      if (isActive) {
+        await deactivateDistributor(distributor.id)
+      } else {
+        await reactivateDistributor(distributor.id)
+      }
+
+      toast({
+        title: `Distribuidor ${actionPastText}!`,
+        description: isActive 
+          ? "O distribuidor foi desativado e não poderá mais fazer login no sistema."
+          : "O distribuidor foi reativado e pode fazer login no sistema novamente.",
+      })
+
       onOpenChange(false)
-    }, 1000)
+      
+      if (onDistributorUpdated) {
+        onDistributorUpdated()
+      }
+
+    } catch (error) {
+      console.error(`Erro ao ${actionText.toLowerCase()} distribuidor:`, error)
+      toast({
+        title: `Erro ao ${actionText.toLowerCase()}`,
+        description: error instanceof Error ? error.message : "Ocorreu um erro inesperado",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-heading flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-5 h-5" />
-            Eliminar Distribuidor
+          <DialogTitle className={`font-heading flex items-center gap-2 ${
+            isActive ? 'text-destructive' : 'text-green-700'
+          }`}>
+            {isActive ? <UserX className="w-5 h-5" /> : <UserCheck className="w-5 h-5" />}
+            {actionText} Distribuidor
           </DialogTitle>
           <DialogDescription className="font-body">
-            Esta acción no se puede deshacer. El distribuidor será eliminado permanentemente del sistema.
+            {isActive 
+              ? "O distribuidor será desativado (não excluído) e não poderá mais fazer login no sistema."
+              : "O distribuidor será reativado e poderá fazer login no sistema novamente."
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="p-4 bg-muted rounded-lg space-y-2">
-          <h4 className="font-heading text-sm text-foreground">{revendedor.nome}</h4>
-          <p className="text-xs text-muted-foreground font-body">Email: {revendedor.email}</p>
-          <p className="text-xs text-muted-foreground font-body">Teléfono: {revendedor.telefone}</p>
+          <div className="flex items-center justify-between">
+            <h4 className="font-heading text-sm text-foreground">
+              {distributor.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </h4>
+            <span className={`px-2 py-1 rounded text-xs ${
+              isActive 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {isActive ? 'Ativo' : 'Inativo'}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground font-body">Email: {distributor.email}</p>
           <p className="text-xs text-muted-foreground font-body">
-            Piezas: {revendedor.quantidadePecas} ({formatCurrency(revendedor.valorTotalPecas)})
+            Endereço: {distributor.address || "Não informado"}
           </p>
-          <p className="text-xs text-muted-foreground font-body">Total de ventas: {revendedor.totalVendas}</p>
+          <p className="text-xs text-muted-foreground font-body">
+            Criado em: {new Date(distributor.created_at).toLocaleDateString('pt-BR')}
+          </p>
         </div>
 
-        {revendedor.quantidadePecas > 0 && (
-          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-800 font-body">
-              <strong>Atención:</strong> Este distribuidor posee {revendedor.quantidadePecas} piezas en stock.
-              Asegúrese de recuperar las piezas antes de eliminar.
+        {isActive ? (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-800 font-body">
+                <p><strong>Atenção:</strong></p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>O distribuidor não poderá fazer login</li>
+                  <li>Os dados serão preservados (soft delete)</li>
+                  <li>A conta pode ser reativada posteriormente</li>
+                  <li>Histórico e dados de vendas são mantidos</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800 font-body">
+              <strong>Reativação:</strong> O distribuidor poderá fazer login no sistema novamente 
+              com as mesmas credenciais.
             </p>
           </div>
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-body">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            className="font-body"
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="font-body">
-            {isLoading ? "Eliminando..." : "Eliminar Distribuidor"}
+          <Button 
+            variant={isActive ? "destructive" : "default"}
+            onClick={handleAction} 
+            disabled={isLoading} 
+            className="font-body"
+          >
+            {isLoading ? `${actionText.replace('r', 'ndo')}...` : `${actionText} Distribuidor`}
           </Button>
         </DialogFooter>
       </DialogContent>

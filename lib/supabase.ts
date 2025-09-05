@@ -75,3 +75,23 @@ export interface UpdateProductData {
   category_id?: number | null
   active?: boolean
 }
+
+// Interfaces para sistema de revendedores
+export interface ResellerProfile {
+  id: string
+  email: string
+  name?: string
+  phone?: string
+  user_created_at: string
+  role: 'reseller'
+  address: string | null
+  description: string | null
+  active: boolean
+  profile_created_at: string
+}
+
+export interface ResellerStats {
+  total_resellers: number
+  active_resellers: number
+  inactive_resellers: number
+}
