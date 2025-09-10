@@ -10,8 +10,11 @@
   "servers": {
     "supabase": {
       "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=eelizogeyrjjrfrximif"],
+      "args": ["-y", "@supabase/mcp-server-supabase@latest"],
       "env": {
+        "SUPABASE_URL": "https://eelizogeyrjjrfrximif.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlbGl6b2dleXJqanJmcnhpbWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MDIzODIsImV4cCI6MjA3MTQ3ODM4Mn0.AgGDCGfbpioweMa4IrE8O6P2lJ6bAbgFquFnE9CudzM",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlbGl6b2dleXJqanJmcnhpbWlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTkwMjM4MiwiZXhwIjoyMDcxNDc4MzgyfQ._qr5Y795Rida_GaJa0y4K24ns5wiqmzu6T6f_PMblfc",
         "SUPABASE_ACCESS_TOKEN": "sbp_21c415462204d6fb25bd8f70f50d95a9e324f2a3"
       }
     }
