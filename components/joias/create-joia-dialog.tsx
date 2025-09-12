@@ -16,8 +16,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, X, Settings } from "lucide-react"
-import { createProduct, addProductPhotos, handleSupabaseError, validateImageUrl } from '@/lib/products-api'
+import { Settings } from "lucide-react"
+import { createProduct, addProductPhotos, handleSupabaseError } from '@/lib/products-api'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { getCategories } from '@/lib/categories-api'
 import { useToast } from '@/hooks/use-toast'
 import { CategoryManager } from './category-manager'
@@ -38,10 +39,11 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
     code: "",
     category_id: "0",
     name: "",
+    description: "",
     cost_price: "",
     selling_price: "",
   })
-  const [fotos, setFotos] = useState<string[]>([])
+  const [fotos, setFotos] = useState<Array<{url: string, path: string, fileName: string}>>([])
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -80,6 +82,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
       const newProduct = await createProduct({
         code: formData.code,
         name: formData.name,
+        description: formData.description || null,
         cost_price: Number(formData.cost_price),
         selling_price: formData.selling_price ? Number(formData.selling_price) : null,
         category_id: formData.category_id && formData.category_id !== "0" ? Number(formData.category_id) : null,
@@ -88,7 +91,8 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
 
       // Adicionar fotos se houver
       if (fotos.length > 0) {
-        await addProductPhotos(newProduct.id, fotos)
+        const imageUrls = fotos.map(foto => foto.url)
+        await addProductPhotos(newProduct.id, imageUrls)
       }
 
       toast({
@@ -120,6 +124,7 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
       code: "",
       category_id: "0",
       name: "",
+      description: "",
       cost_price: "",
       selling_price: "",
     })
@@ -130,21 +135,8 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const addFoto = () => {
-    const url = prompt("Ingrese la URL de la imagen:")
-    if (url && validateImageUrl(url)) {
-      setFotos((prev) => [...prev, url])
-    } else if (url) {
-      toast({
-        title: "URL inválida",
-        description: "Por favor, ingrese una URL de imagen válida",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const removeFoto = (index: number) => {
-    setFotos((prev) => prev.filter((_, i) => i !== index))
+  const handleFotosChange = (newFotos: Array<{url: string, path: string, fileName: string}>) => {
+    setFotos(newFotos)
   }
 
   return (
@@ -214,6 +206,20 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="description" className="font-body">
+                  Descripción
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Descripción detallada del producto (opcional)"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  className="font-body"
+                  rows={3}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cost_price" className="font-body">
@@ -248,38 +254,12 @@ export function CreateJoiaDialog({ open, onOpenChange, categories, onSuccess }: 
 
               <div className="space-y-2">
                 <Label className="font-body">Fotos</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {fotos.map((foto, index) => (
-                    <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden">
-                      <img
-                        src={foto || "/placeholder.svg"}
-                        alt={`Foto ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0"
-                        onClick={() => removeFoto(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  {fotos.length < 4 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="aspect-square border-dashed font-body bg-transparent"
-                      onClick={addFoto}
-                      disabled={true}
-                    >
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground font-body">Agregue hasta 4 fotos de la joya</p>
+                <ImageUpload
+                  images={fotos}
+                  onImagesChange={handleFotosChange}
+                  maxImages={4}
+                  disabled={isLoading}
+                />
               </div>
 
               <DialogFooter>

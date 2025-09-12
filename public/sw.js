@@ -35,6 +35,14 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Skip API upload requests - let them go directly to network
+  if (event.request.url.includes('/api/upload') || 
+      event.request.method === 'POST' || 
+      event.request.method === 'PUT' || 
+      event.request.method === 'DELETE') {
+    return
+  }
+
   // For navigation requests, try network first, fallback to cache
   if (event.request.mode === 'navigate') {
     event.respondWith(

@@ -26,6 +26,7 @@ export interface Product {
   id: number
   code: string
   name: string
+  description: string | null
   cost_price: number
   selling_price: number | null
   category_id: number | null
@@ -52,6 +53,7 @@ export interface ProductWithDetails {
   id: number
   code: string
   name: string
+  description: string | null
   cost_price: number
   selling_price: number | null
   active: boolean
@@ -65,6 +67,7 @@ export interface ProductWithDetails {
 export interface CreateProductData {
   code: string
   name: string
+  description?: string | null
   cost_price: number
   selling_price?: number | null
   category_id?: number | null
@@ -74,6 +77,7 @@ export interface CreateProductData {
 export interface UpdateProductData {
   code?: string
   name?: string
+  description?: string | null
   cost_price?: number
   selling_price?: number | null
   category_id?: number | null
