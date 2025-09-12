@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,63 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Filter, Send, Package, TrendingUp, DollarSign } from "lucide-react"
 import { MostruarioCard } from "@/components/mostruario/mostruario-card"
 import { CreateMostruarioDialog } from "@/components/mostruario/create-mostruario-dialog"
+import { getShowcases, getShowcaseMovements } from "@/lib/showcase-api"
+import { getDistributors } from "@/lib/distributors-api"
+import type { DistributorProfile } from "@/lib/distributors-api"
+import { useToast } from "@/hooks/use-toast"
+import type { ShowcaseWithDetails } from "@/lib/showcase-api"
 
-// Mock data
-const mockMostruarios = [
-  {
-    id: "M001",
-    codigo: "MST-2024-001",
-    revendedorId: "R001",
-    revendedorNome: "Maria Silva",
-    dataEnvio: "2024-01-15",
-    quantidadePecas: 15,
-    quantidadeProdutos: 8,
-    valorTotal: 4250.0,
-    status: "enviado",
-    produtos: [
-      { joiaId: "J001", joiaNome: "Anel de Ouro 18k", quantidade: 3, precoVenda: 680.0 },
-      { joiaId: "J002", joiaNome: "Brincos de Prata", quantidade: 5, precoVenda: 180.0 },
-      { joiaId: "J003", joiaNome: "Colar de Pérolas", quantidade: 2, precoVenda: 420.0 },
-    ],
-  },
-  {
-    id: "M002",
-    codigo: "MST-2024-002",
-    revendedorId: "R002",
-    revendedorNome: "Ana Costa",
-    dataEnvio: "2024-01-14",
-    quantidadePecas: 12,
-    quantidadeProdutos: 6,
-    valorTotal: 3180.0,
-    status: "enviado",
-    produtos: [
-      { joiaId: "J001", joiaNome: "Anel de Ouro 18k", quantidade: 2, precoVenda: 680.0 },
-      { joiaId: "J002", joiaNome: "Brincos de Prata", quantidade: 4, precoVenda: 180.0 },
-    ],
-  },
-  {
-    id: "M003",
-    codigo: "MST-2024-003",
-    revendedorId: "R003",
-    revendedorNome: "Carla Mendes",
-    dataEnvio: "2024-01-13",
-    quantidadePecas: 8,
-    quantidadeProdutos: 4,
-    valorTotal: 2240.0,
-    status: "pendente",
-    produtos: [
-      { joiaId: "J003", joiaNome: "Colar de Pérolas", quantidade: 3, precoVenda: 420.0 },
-      { joiaId: "J002", joiaNome: "Brincos de Prata", quantidade: 5, precoVenda: 180.0 },
-    ],
-  },
-]
-
-const mockRevendedores = [
-  { id: "R001", nome: "Maria Silva" },
-  { id: "R002", nome: "Ana Costa" },
-  { id: "R003", nome: "Carla Mendes" },
-  { id: "R004", nome: "Lucia Santos" },
-]
+// Dados reais do Supabase
 
 export default function MostruarioPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -76,19 +26,62 @@ export default function MostruarioPage() {
     dataFim: "",
   })
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [mostruarios, setMostruarios] = useState<ShowcaseWithDetails[]>([])
+  const [revendedores, setRevendedores] = useState<DistributorProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-  const filteredMostruarios = mockMostruarios.filter((mostruario) => {
+  // Carregar mostruários e revendedores do banco de dados
+  useEffect(() => {
+    loadShowcases()
+    loadRevendedores()
+  }, [])
+
+  const loadShowcases = async () => {
+    try {
+      setLoading(true)
+      const data = await getShowcases()
+      setMostruarios(data)
+    } catch (error) {
+      console.error('Erro ao carregar mostruários:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os mostruários.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadRevendedores = async () => {
+    try {
+      const data = await getDistributors()
+      // Filtrar apenas revendedores ativos
+      const activeRevendedores = data.filter(distributor => distributor.active)
+      setRevendedores(activeRevendedores)
+    } catch (error) {
+      console.error('Erro ao carregar revendedores:', error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os revendedores.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const filteredMostruarios = mostruarios.filter((mostruario) => {
     const matchesSearch =
-      mostruario.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mostruario.revendedorNome.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRevendedor = selectedRevendedor === "todos" || mostruario.revendedorId === selectedRevendedor
+      (mostruario.code?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (mostruario.distributor_profile?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    const matchesRevendedor = selectedRevendedor === "todos" || mostruario.profile_id === selectedRevendedor
     return matchesSearch && matchesRevendedor
   })
 
-  const totalMostruarios = mockMostruarios.length
-  const totalPecasEnviadas = mockMostruarios.reduce((sum, m) => sum + m.quantidadePecas, 0)
-  const valorTotalEnviado = mockMostruarios.reduce((sum, m) => sum + m.valorTotal, 0)
-  const mostruariosPendentes = mockMostruarios.filter((m) => m.status === "pendente").length
+  const totalMostruarios = mostruarios.length
+  const totalPecasEnviadas = mostruarios.reduce((sum, m) => sum + (m.total_pieces || 0), 0)
+  const valorTotalEnviado = mostruarios.reduce((sum, m) => sum + (m.total_value || 0), 0)
+
 
   const formatCurrency = (value: number) => {
     return `₲${value.toLocaleString()}`
@@ -113,7 +106,7 @@ export default function MostruarioPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-body text-muted-foreground">Total de Muestrarios</CardTitle>
@@ -147,16 +140,7 @@ export default function MostruarioPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-orange-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-body text-muted-foreground">Pendientes</CardTitle>
-                <TrendingUp className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-heading text-orange-600">{mostruariosPendentes}</div>
-                <p className="text-xs text-orange-600 font-body">esperando envío</p>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Filters */}
@@ -192,9 +176,9 @@ export default function MostruarioPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos los distribuidores</SelectItem>
-                      {mockRevendedores.map((revendedor) => (
+                      {revendedores.map((revendedor) => (
                         <SelectItem key={revendedor.id} value={revendedor.id}>
-                          {revendedor.nome}
+                          {revendedor.name || revendedor.email.split('@')[0]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -252,24 +236,35 @@ export default function MostruarioPage() {
           </Card>
 
           {/* Mostruarios Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMostruarios.map((mostruario) => (
-              <MostruarioCard key={mostruario.id} mostruario={mostruario} />
-            ))}
-          </div>
-
-          {filteredMostruarios.length === 0 && (
+          {loading ? (
             <Card className="border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Send className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-heading text-foreground mb-2">Ningún muestrario encontrado</h3>
-                <p className="text-muted-foreground font-body text-center">
-                  {searchTerm || selectedRevendedor !== "todos"
-                    ? "Intente ajustar los filtros o crear un nuevo muestrario."
-                    : "Comience creando su primer muestrario."}
-                </p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                <p className="text-muted-foreground font-body">Cargando muestrarios...</p>
               </CardContent>
             </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredMostruarios.map((mostruario) => (
+                  <MostruarioCard key={mostruario.id} mostruario={mostruario} />
+                ))}
+              </div>
+
+              {filteredMostruarios.length === 0 && (
+                <Card className="border-border">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Send className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-heading text-foreground mb-2">Ningún muestrario encontrado</h3>
+                    <p className="text-muted-foreground font-body text-center">
+                      {searchTerm || selectedRevendedor !== "todos"
+                        ? "Intente ajustar los filtros o crear un nuevo muestrario."
+                        : "Comience creando su primer muestrario."}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </main>
