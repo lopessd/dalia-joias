@@ -44,7 +44,7 @@ export function MostruarioCard({ mostruario }: MostruarioCardProps) {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                   <User className="w-3 h-3" />
-                  {mostruario.distributor_profile?.name || 'N/A'}
+                  {mostruario.distributor_profile?.name || 'Distribuidor N/A'}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                   <Calendar className="w-3 h-3" />

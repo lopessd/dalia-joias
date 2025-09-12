@@ -269,7 +269,11 @@ export default function MostruarioPage() {
         </div>
       </main>
 
-      <CreateMostruarioDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateMostruarioDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        onMostruarioCreated={loadShowcases}
+      />
     </div>
   )
 }

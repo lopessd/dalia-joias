@@ -1,13 +1,9 @@
 import { supabase } from './supabase'
-import type { Database } from './supabase'
 
 // Função para obter o cliente Supabase com contexto de autenticação
 function getAuthenticatedSupabase() {
   return supabase
 }
-
-type ShowcaseInsert = Database['public']['Tables']['showcase']['Insert']
-type InventoryMovementInsert = Database['public']['Tables']['inventory_movements']['Insert']
 
 export interface CreateShowcaseData {
   profile_id: string
@@ -28,6 +24,7 @@ export interface ShowcaseWithDetails {
   distributor_profile?: {
     id: string
     name?: string
+    email?: string
     address?: string
     description?: string
   }
@@ -86,7 +83,7 @@ export async function createShowcase(data: CreateShowcaseData): Promise<Showcase
     }
 
     // 2. Criar as movimentações de inventário
-    const inventoryMovements: InventoryMovementInsert[] = data.products.map(product => ({
+    const inventoryMovements = data.products.map(product => ({
       product_id: product.product_id,
       quantity: -product.quantity, // Negativo porque é saída do estoque
       reason: `Envio para mostruário #${showcase.id}`,
@@ -104,33 +101,32 @@ export async function createShowcase(data: CreateShowcaseData): Promise<Showcase
       throw new Error(`Erro ao registrar movimentações: ${movementsError.message}`)
     }
 
-    // 3. Atualizar o estoque dos produtos
+    // 3. Validar se produtos existem e têm estoque suficiente
     for (const product of data.products) {
-      // Buscar o produto atual
+      // Buscar o produto atual com seus movimentos de estoque
       const { data: currentProduct, error: fetchError } = await supabase
         .from('products')
-        .select('id, current_stock')
-        .eq('id', product.product_id)
+        .select(`
+          id,
+          name,
+          inventory_movements(quantity)
+        `)
+        .eq('id', Number(product.product_id))
         .single()
 
       if (fetchError) {
         console.error('Erro ao buscar produto:', fetchError)
-        continue // Continua com os outros produtos
+        throw new Error(`Erro ao buscar produto ${product.product_id}: ${fetchError.message}`)
       }
 
-      // Calcular novo estoque
-      const currentStock = currentProduct.current_stock || 0
-      const newStock = Math.max(0, currentStock - product.quantity)
+      // Calcular estoque atual
+      const currentStock = currentProduct.inventory_movements?.reduce(
+        (total: number, movement: any) => total + movement.quantity, 0
+      ) || 0
 
-      // Atualizar estoque
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ current_stock: newStock })
-        .eq('id', product.product_id)
-
-      if (updateError) {
-        console.error('Erro ao atualizar estoque do produto:', updateError)
-        // Não falha a operação toda, apenas loga o erro
+      // Verificar se há estoque suficiente
+      if (currentStock < product.quantity) {
+        throw new Error(`Estoque insuficiente para o produto "${currentProduct.name}". Disponível: ${currentStock}, Solicitado: ${product.quantity}`)
       }
     }
 
@@ -152,7 +148,7 @@ export async function getShowcaseById(id: number): Promise<ShowcaseWithDetails |
       .from('showcase')
       .select(`
         *,
-        distributor_profile:profiles(*)
+        distributor_profile:profiles(id, role, active, address, description)
       `)
       .eq('id', id)
       .single()
@@ -183,11 +179,12 @@ export async function getShowcases(): Promise<ShowcaseWithDetails[]> {
       throw new Error('Usuário não autenticado')
     }
 
+
+
     const { data, error } = await supabase
       .from('showcase')
       .select(`
         *,
-        distributor_profile:profiles(*),
         inventory_movements(
           *,
           jewelry:products(*)
@@ -200,35 +197,93 @@ export async function getShowcases(): Promise<ShowcaseWithDetails[]> {
       throw new Error(`Erro ao buscar mostruários: ${error.message}`)
     }
 
-    // Buscar nomes dos usuários usando a função RPC
-    const profileIds = [...new Set((data || []).map(showcase => showcase.profile_id))]
+
+
+    // Buscar todos os distribuidores com nomes reais usando RPC function
+    const distributorsMap: Record<string, string> = {}
     
-    const userNames: Record<string, string> = {}
-    if (profileIds.length > 0) {
-      const { data: userNamesData, error: userNamesError } = await supabase
-        .rpc('get_user_names', { user_ids: profileIds })
+    try {
+      const { data: resellers, error: resellersError } = await supabase.rpc('get_resellers_with_users')
       
-      if (!userNamesError && userNamesData) {
-        userNamesData.forEach((user: any) => {
-          userNames[user.id] = user.name
+      if (!resellersError && resellers) {
+        resellers.forEach((reseller: any) => {
+          if (reseller.name) {
+            distributorsMap[reseller.id] = reseller.name
+          } else if (reseller.email) {
+            distributorsMap[reseller.id] = reseller.email.split('@')[0]
+          }
         })
       }
+    } catch (error) {
+      console.error('Erro ao buscar distribuidores:', error)
+    }
+
+    // Resolver nomes dos usuários para os showcases (legacy code para fallback)
+    const profileIds = [...new Set((data || []).map(showcase => showcase.profile_id))]
+    const userNames: Record<string, string> = {}
+    const currentUser = user
+    
+    if (profileIds.length > 0) {
+      // Tentar buscar da tabela profiles primeiro (fallback)
+      try {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', profileIds)
+        
+        if (!profilesError && profilesData) {
+          profilesData.forEach((profile: any) => {
+            const displayName = profile.name || profile.email
+            if (displayName) {
+              userNames[profile.id] = displayName
+            }
+          })
+        }
+      } catch (error) {
+        console.log('Erro ao buscar profiles:', error)
+      }
+      
+      // Para o usuário atual, usar o email se disponível
+      if (currentUser && profileIds.includes(currentUser.id) && !userNames[currentUser.id]) {
+        userNames[currentUser.id] = currentUser.email || `Usuario ${currentUser.id.slice(0, 8)}`
+      }
+      
+      // Para IDs não resolvidos, criar nomes descritivos
+      profileIds.forEach(id => {
+        if (!userNames[id]) {
+          // Criar um nome mais amigável baseado no UUID
+          const shortId = id.slice(0, 8)
+          userNames[id] = `Distribuidor ${shortId}`
+        }
+      })
     }
 
     // Processar os dados para calcular totais
     const showcasesWithDetails: ShowcaseWithDetails[] = (data || []).map(showcase => {
       const movements = showcase.inventory_movements || []
-      const totalPieces = movements.reduce((sum, mov) => sum + Math.abs(mov.quantity), 0)
-      const totalValue = movements.reduce((sum, mov) => {
+      const totalPieces = movements.reduce((sum: number, mov: any) => sum + Math.abs(mov.quantity), 0)
+      const totalValue = movements.reduce((sum: number, mov: any) => {
         const jewelry = mov.jewelry
         return sum + (Math.abs(mov.quantity) * (jewelry?.selling_price || jewelry?.cost_price || 0))
       }, 0)
+
+      // Usar o nome real do distribuidor do mapa que já foi carregado
+      let distributorName = 'N/A'
+      
+      if (distributorsMap[showcase.profile_id]) {
+        distributorName = distributorsMap[showcase.profile_id]
+      } else if (userNames[showcase.profile_id]) {
+        distributorName = userNames[showcase.profile_id]
+      } else {
+        // Como último recurso, usar o ID do profile formatado
+        distributorName = `Distribuidor ${showcase.profile_id.slice(0, 8)}`
+      }
 
       return {
         ...showcase,
         distributor_profile: {
           ...showcase.distributor_profile,
-          name: userNames[showcase.profile_id] || 'N/A'
+          name: distributorName
         },
         total_pieces: totalPieces,
         total_value: totalValue,

@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 interface CreateMostruarioDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onMostruarioCreated?: () => void
 }
 
 interface ProdutoSelecionado {
@@ -27,7 +28,7 @@ interface ProdutoSelecionado {
 
 // Removido mockRevendedores e mockJoias - agora usando dados reais da API
 
-export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioDialogProps) {
+export function CreateMostruarioDialog({ open, onOpenChange, onMostruarioCreated }: CreateMostruarioDialogProps) {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedRevendedor, setSelectedRevendedor] = useState<DistributorProfile | null>(null)
@@ -107,10 +108,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
    })
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return `₲${value.toLocaleString()}`
   }
 
   const handleSelectRevendedor = (revendedorId: string) => {
@@ -162,8 +160,8 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
   const handleSubmit = async () => {
     if (!selectedRevendedor || produtosSelecionados.length === 0) {
       toast({
-        title: "Erro",
-        description: "Selecione um revendedor e pelo menos um produto.",
+        title: "Error",
+        description: "Seleccione un distribuidor y al menos un producto.",
         variant: "destructive",
       })
       return
@@ -185,8 +183,8 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
       await createShowcase(showcaseData)
 
     toast({
-          title: "Mostruário criado com sucesso!",
-          description: "Mostruário criado com sucesso. Os produtos foram adicionados e o estoque foi atualizado.",
+          title: "¡Vitrina creada con éxito!",
+          description: "Vitrina creada con éxito. Los productos fueron agregados y el stock se actualizó.",
         })
 
       // Reset form e fechar dialog
@@ -196,11 +194,16 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
       setProdutosSelecionados([])
       onOpenChange(false)
 
+      // Callback para recarregar a lista
+      if (onMostruarioCreated) {
+        onMostruarioCreated()
+      }
+
     } catch (error) {
       console.error('Erro ao criar mostruário:', error)
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro inesperado ao criar mostruário.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error inesperado al crear la vitrina.",
         variant: "destructive",
       })
     } finally {
@@ -220,12 +223,12 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-heading text-foreground mb-4">Escolha o Revendedor</h3>
+        <h3 className="text-lg font-heading text-foreground mb-4">Elegí el Distribuidor</h3>
         <div className="space-y-2">
-          <Label className="font-body">Revendedor *</Label>
+          <Label className="font-body">Distribuidor *</Label>
           <Select onValueChange={handleSelectRevendedor} disabled={isLoadingRevendedores}>
             <SelectTrigger className="font-body">
-              <SelectValue placeholder={isLoadingRevendedores ? "Carregando revendedores..." : "Selecione um revendedor"} />
+              <SelectValue placeholder={isLoadingRevendedores ? "Cargando distribuidores..." : "Seleccioná un distribuidor"} />
             </SelectTrigger>
             <SelectContent>
               {revendedores.map((revendedor) => (
@@ -243,7 +246,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
           <CardHeader>
             <CardTitle className="font-heading text-foreground flex items-center gap-2">
               <User className="w-4 h-4" />
-              Revendedor Selecionado
+              Distribuidor Seleccionado
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -260,18 +263,18 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
   const renderStep2 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-heading text-foreground mb-4">Escolha os Produtos</h3>
+        <h3 className="text-lg font-heading text-foreground mb-4">Elegí los Productos</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search" className="font-body">
-                Buscar Produtos
+                Buscar Productos
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   id="search"
-                  placeholder="Código, nome ou categoria..."
+                  placeholder="Código, nombre o categoría..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 font-body"
@@ -280,14 +283,14 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
             </div>
             <div className="space-y-2">
               <Label className="font-body">
-                Categoria
+                Categoría
               </Label>
               <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
                 <SelectTrigger className="font-body">
-                  <SelectValue placeholder="Filtrar por categoria" />
+                  <SelectValue placeholder="Filtrar por categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                  <SelectItem value="todas">Todas las categorías</SelectItem>
                   {categorias.map((categoria) => (
                     <SelectItem key={categoria.id} value={categoria.name}>
                       {categoria.name}
@@ -303,12 +306,12 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Carregando produtos...</p>
+                  <p className="text-sm text-muted-foreground">Cargando productos...</p>
                 </div>
               </div>
             ) : filteredJoias.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Nenhum produto encontrado com os filtros aplicados.</p>
+                <p className="text-muted-foreground">No se encontraron productos con los filtros aplicados.</p>
               </div>
             ) : (
               filteredJoias.map((joia) => {
@@ -336,7 +339,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground font-body">Código: {joia.code}</p>
-                          <p className="text-xs text-muted-foreground font-body">Estoque: {estoqueDisponivel}</p>
+                          <p className="text-xs text-muted-foreground font-body">Stock: {estoqueDisponivel}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-heading text-foreground">
@@ -344,7 +347,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
                           </p>
                           {isSelected && (
                             <Badge variant="secondary" className="mt-1 text-xs">
-                              Selecionado
+                              Seleccionado
                             </Badge>
                           )}
                         </div>
@@ -363,12 +366,12 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-heading text-foreground mb-4">Lista de Produtos Selecionados</h3>
+        <h3 className="text-lg font-heading text-foreground mb-4">Lista de Productos Seleccionados</h3>
         {produtosSelecionados.length === 0 ? (
           <Card className="border-border">
             <CardContent className="p-6 text-center">
               <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground font-body">Nenhum produto selecionado</p>
+              <p className="text-muted-foreground font-body">Ningún producto seleccionado</p>
             </CardContent>
           </Card>
         ) : (
@@ -380,8 +383,9 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
                     <div className="flex-1">
                       <h4 className="font-heading text-sm text-foreground">{produto.joia.name}</h4>
                       <p className="text-xs text-muted-foreground font-body">Código: {produto.joia.code}</p>
+                      <p className="text-xs text-muted-foreground font-body">Stock: {produto.joia.current_stock || 0}</p>
                       <p className="text-xs text-muted-foreground font-body">
-                        {formatCurrency(produto.joia.selling_price || produto.joia.cost_price || 0)} cada
+                        {formatCurrency(produto.joia.selling_price || produto.joia.cost_price || 0)} c/u
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -417,9 +421,9 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
   const renderStep4 = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-heading text-foreground mb-2">Confirmação Final</h3>
+        <h3 className="text-lg font-heading text-foreground mb-2">Confirmación Final</h3>
         <p className="text-muted-foreground font-body">
-          Revise todos os dados antes de confirmar o envio do mostruário
+          Revisá todos los datos antes de confirmar el envío de la vitrina
         </p>
       </div>
 
@@ -427,7 +431,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
         <div className="p-4 border rounded-lg bg-muted/30">
           <h4 className="font-heading mb-2 flex items-center gap-2">
             <User className="h-4 w-4" />
-            Revendedor Selecionado
+            Distribuidor Seleccionado
           </h4>
           <p className="text-sm font-heading text-foreground">{selectedRevendedor?.name}</p>
           <p className="text-xs text-muted-foreground font-body">{selectedRevendedor?.email}</p>
@@ -436,16 +440,16 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
         <div className="p-4 border rounded-lg bg-muted/30">
           <h4 className="font-heading mb-3 flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Resumo do Envio
+            Resumen del Envío
           </h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="text-center p-2 bg-background rounded">
               <p className="font-heading text-lg text-foreground">{produtosSelecionados.length}</p>
-              <p className="text-muted-foreground text-xs font-body">Produtos</p>
+              <p className="text-muted-foreground text-xs font-body">Productos</p>
             </div>
             <div className="text-center p-2 bg-background rounded">
               <p className="font-heading text-lg text-foreground">{getTotalPecas()}</p>
-              <p className="text-muted-foreground text-xs font-body">Peças</p>
+              <p className="text-muted-foreground text-xs font-body">Piezas</p>
             </div>
             <div className="text-center p-2 bg-background rounded">
               <p className="font-heading text-lg text-foreground">{formatCurrency(getTotalValor())}</p>
@@ -455,7 +459,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
         </div>
 
         <div className="p-4 border rounded-lg">
-          <h4 className="font-heading mb-3">Lista de Produtos</h4>
+          <h4 className="font-heading mb-3">Lista de Productos</h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
              {produtosSelecionados.map((produto) => (
                <div key={produto.joia.id} className="flex justify-between items-center text-sm p-3 bg-muted/50 rounded border">
@@ -464,7 +468,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
                    <p className="text-muted-foreground text-xs font-body">Código: {produto.joia.code}</p>
                  </div>
                  <div className="text-right">
-                   <p className="font-heading text-foreground">Qtd: {produto.quantidade}</p>
+                   <p className="font-heading text-foreground">Cant: {produto.quantidade}</p>
                    <p className="text-muted-foreground text-xs font-body">
                      {formatCurrency(produto.quantidade * (produto.joia.selling_price || produto.joia.cost_price || 0))}
                    </p>
@@ -478,10 +482,10 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
            <div className="flex items-start gap-3">
              <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
              <div className="text-sm">
-               <p className="font-heading text-orange-800 mb-1">Atenção!</p>
+               <p className="font-heading text-orange-800 mb-1">¡Atención!</p>
                <p className="text-orange-700 font-body">
-                 Ao confirmar, os produtos serão adicionados ao mostruário e <strong>removidos do estoque</strong>. 
-                 Esta ação registrará as movimentações no sistema.
+                 Al confirmar, los productos serán agregados a la vitrina y <strong>removidos del stock</strong>. 
+                 Esta acción registrará los movimientos en el sistema.
                </p>
              </div>
            </div>
@@ -494,12 +498,12 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Criar Novo Mostruário</DialogTitle>
+          <DialogTitle className="font-heading">Crear Nueva Vitrina</DialogTitle>
           <DialogDescription className="font-body">
-            Passo {currentStep} de 4: {currentStep === 1 && "Escolha o revendedor"}
-            {currentStep === 2 && "Selecione os produtos"}
-            {currentStep === 3 && "Ajuste as quantidades"}
-            {currentStep === 4 && "Confirme os dados"}
+            Paso {currentStep} de 4: {currentStep === 1 && "Elegí el distribuidor"}
+            {currentStep === 2 && "Seleccioná los productos"}
+            {currentStep === 3 && "Ajustá las cantidades"}
+            {currentStep === 4 && "Confirmá los datos"}
           </DialogDescription>
         </DialogHeader>
 
@@ -516,7 +520,7 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
               {currentStep > 1 && (
                 <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)} className="gap-2 font-body">
                   <ArrowLeft className="w-4 h-4" />
-                  Voltar
+                  Volver
                 </Button>
               )}
             </div>
@@ -533,12 +537,12 @@ export function CreateMostruarioDialog({ open, onOpenChange }: CreateMostruarioD
                   }
                   className="gap-2 font-body"
                 >
-                  Próximo
+                  Siguiente
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={isLoading} className="font-body">
-                  {isLoading ? "Criando..." : "Confirmar Mostruário"}
+                  {isLoading ? "Creando..." : "Confirmar Vitrina"}
                 </Button>
               )}
             </div>
