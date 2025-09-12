@@ -24,7 +24,7 @@ export function Sidebar({ userType }: SidebarProps) {
     // { href: "/admin/dashboard", label: "Panel de Control", icon: LayoutDashboard }, // Oculto temporariamente
     { href: "/admin/joias", label: "Joyas", icon: Gem },
     { href: "/admin/revendedores", label: "Distribuidores", icon: Users },
-    // { href: "/admin/mostruario", label: "Muestrario", icon: Send }, // Oculto temporariamente
+    { href: "/admin/mostruario", label: "Muestrario", icon: Send }, // Oculto temporariamente
   ]
 
   const revendedorNavItems = [
