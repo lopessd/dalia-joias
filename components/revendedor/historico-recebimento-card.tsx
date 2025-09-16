@@ -5,40 +5,24 @@ import { Calendar, Package, DollarSign, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { ViewRecebimentoDialog } from "./view-recebimento-dialog"
-
-interface Produto {
-  joiaId: string
-  joiaNome: string
-  quantidade: number
-  precoVenda: number
-}
-
-interface Recebimento {
-  id: string
-  codigo: string
-  dataRecebimento: string
-  quantidadePecas: number
-  quantidadeProdutos: number
-  valorTotal: number
-  produtos: Produto[]
-}
+import { type ShowcaseHistoryItem } from "@/lib/showcase-history-api"
+import { formatCurrency } from "@/lib/currency"
 
 interface HistoricoRecebimentoCardProps {
-  recebimento: Recebimento
+  recebimento: ShowcaseHistoryItem
 }
 
 export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCardProps) {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
+    // Criar data considerando o fuso horário local para evitar problemas de conversão
+    const date = new Date(dateString)
+    return date.toLocaleDateString("pt-BR", {
+      timeZone: "America/Asuncion"
+    })
   }
 
   return (
@@ -47,10 +31,10 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="font-heading text-foreground">{recebimento.codigo}</CardTitle>
+              <CardTitle className="font-heading text-foreground">{recebimento.code}</CardTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mt-1">
                 <Calendar className="w-3 h-3" />
-                {formatDate(recebimento.dataRecebimento)}
+                {formatDate(recebimento.created_at)}
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(true)} className="gap-2 font-body">
@@ -66,21 +50,21 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
                 <Package className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground font-body">Peças</span>
               </div>
-              <p className="text-lg font-heading text-foreground">{recebimento.quantidadePecas}</p>
+              <p className="text-lg font-heading text-foreground">{recebimento.total_pieces}</p>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Package className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground font-body">Produtos</span>
               </div>
-              <p className="text-lg font-heading text-foreground">{recebimento.quantidadeProdutos}</p>
+              <p className="text-lg font-heading text-foreground">{recebimento.total_products}</p>
             </div>
             <div className="text-center p-3 bg-primary/5 rounded-lg border border-primary/20">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <DollarSign className="w-4 h-4 text-primary" />
                 <span className="text-sm text-primary font-body">Valor</span>
               </div>
-              <p className="text-lg font-heading text-primary">{formatCurrency(recebimento.valorTotal)}</p>
+              <p className="text-lg font-heading text-primary">{formatCurrency(recebimento.total_value)}</p>
             </div>
           </div>
 
@@ -88,15 +72,15 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
           <div className="mt-4">
             <h4 className="text-sm font-heading text-foreground mb-2">Produtos Recebidos:</h4>
             <div className="space-y-1">
-              {recebimento.produtos.slice(0, 3).map((produto, index) => (
+              {recebimento.products.slice(0, 3).map((produto, index) => (
                 <div key={index} className="flex justify-between items-center text-sm font-body">
-                  <span className="text-muted-foreground truncate">{produto.joiaNome}</span>
-                  <span className="text-foreground">{produto.quantidade}x</span>
+                  <span className="text-muted-foreground truncate">{produto.product_name}</span>
+                  <span className="text-foreground">{produto.quantity}x</span>
                 </div>
               ))}
-              {recebimento.produtos.length > 3 && (
+              {recebimento.products.length > 3 && (
                 <p className="text-xs text-muted-foreground font-body">
-                  +{recebimento.produtos.length - 3} produtos...
+                  +{recebimento.products.length - 3} produtos...
                 </p>
               )}
             </div>
