@@ -3,13 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Gem, Users, Package, TrendingUp, DollarSign, ShoppingBag, Send, AlertCircle } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 
 export default function AdminDashboard() {
   
-  // Currency formatting function
-  const formatCurrency = (value: number) => {
-    return `₲${value.toLocaleString()}`
-  }
+
   
   // Mock data - in a real app, this would come from an API
   const dashboardData = {

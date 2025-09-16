@@ -1,86 +1,79 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Gem, Package, DollarSign } from "lucide-react"
+import { Search, Filter, Gem, Package, DollarSign, Loader2 } from "lucide-react"
 import { RevendedorJoiaCard } from "@/components/revendedor/revendedor-joia-card"
-
-// Mock data - joias que a revendedora possui
-const mockJoias = [
-  {
-    id: "J001",
-    codigo: "AN001",
-    nome: "Anel de Ouro 18k",
-    categoria: "Anéis",
-    descricao: "Anel clássico em ouro 18k com acabamento polido",
-    precoCusto: 450.0, // Não pode editar
-    precoVenda: 680.0, // Pode editar
-    quantidade: 5,
-    fotos: ["/anel-ouro.png", "/anel-ouro-2.png"],
-  },
-  {
-    id: "J002",
-    codigo: "BR002",
-    nome: "Brincos de Prata",
-    categoria: "Brincos",
-    descricao: "Brincos delicados em prata 925 com zircônias",
-    precoCusto: 120.0,
-    precoVenda: 220.0,
-    quantidade: 3,
-    fotos: ["/brincos-prata.png", "/brincos-prata-2.png"],
-  },
-  {
-    id: "J003",
-    codigo: "CO003",
-    nome: "Colar de Pérolas",
-    categoria: "Colares",
-    descricao: "Colar elegante com pérolas naturais",
-    precoCusto: 280.0,
-    precoVenda: 520.0,
-    quantidade: 2,
-    fotos: ["/colar-perolas.png", "/colar-perolas-2.png"],
-  },
-  {
-    id: "J004",
-    codigo: "PU004",
-    nome: "Pulseira de Ouro",
-    categoria: "Pulseiras",
-    descricao: "Pulseira delicada em ouro 18k",
-    precoCusto: 380.0,
-    precoVenda: 600.0,
-    quantidade: 4,
-    fotos: ["/pulseira-ouro.png"],
-  },
-]
+import { getDistributorJewelry, type DistributorJewelry } from "@/lib/inventory-api"
+import { supabase } from "@/lib/supabase"
+import { formatCurrency } from "@/lib/currency"
 
 export default function RevendedorJoiasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("todas")
+  const [joias, setJoias] = useState<DistributorJewelry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<string[]>([])
+  const [userProfile, setUserProfile] = useState<string | null>(null)
 
-  const categories = ["Anéis", "Brincos", "Colares", "Pulseiras", "Relógios"]
+  // Carregar dados do usuário e joias
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const filteredJoias = mockJoias.filter((joia) => {
+        // Obter usuário atual
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setError("Usuário não autenticado")
+          return
+        }
+
+        setUserProfile(user.id)
+
+        // Carregar joias do distribuidor
+        const distributorJewelry = await getDistributorJewelry(user.id)
+        setJoias(distributorJewelry)
+
+        // Extrair categorias únicas
+        const uniqueCategories = Array.from(
+          new Set(distributorJewelry.map(j => j.category?.name).filter(Boolean))
+        ) as string[]
+        setCategories(uniqueCategories)
+
+      } catch (err) {
+        console.error('Erro ao carregar joias:', err)
+        setError(err instanceof Error ? err.message : 'Erro desconhecido')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const filteredJoias = joias.filter((joia) => {
     const matchesSearch =
-      joia.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      joia.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "todas" || joia.categoria === selectedCategory
+      joia.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      joia.code.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "todas" || joia.category?.name === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  const totalPecas = mockJoias.reduce((sum, joia) => sum + joia.quantidade, 0)
-  const totalProdutos = mockJoias.length
-  const valorTotalEstoque = mockJoias.reduce((sum, joia) => sum + joia.quantidade * joia.precoVenda, 0)
+  const totalPecas = joias.reduce((sum, joia) => sum + joia.quantity, 0)
+  const totalProdutos = joias.length
+  const valorTotalEstoque = joias.reduce((sum, joia) => {
+    const precoVenda = joia.selling_price || joia.cost_price * 1.5 // Fallback se não tiver preço de venda
+    return sum + joia.quantity * precoVenda
+  }, 0)
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -152,12 +145,13 @@ export default function RevendedorJoiasPage() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10 font-body"
+                      disabled={loading}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="font-body">Categoria</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={loading}>
                     <SelectTrigger className="font-body">
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
@@ -178,7 +172,8 @@ export default function RevendedorJoiasPage() {
                       setSearchTerm("")
                       setSelectedCategory("todas")
                     }}
-                    className="px-4 py-2 text-sm font-body border border-border rounded-md hover:bg-muted transition-colors"
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-body border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Limpar Filtros
                   </button>
@@ -188,22 +183,60 @@ export default function RevendedorJoiasPage() {
           </Card>
 
           {/* Joias Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJoias.map((joia) => (
-              <RevendedorJoiaCard key={joia.id} joia={joia} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-gray-600">Carregando joias...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar joias</h3>
+                <p className="text-red-600">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredJoias.map((joia) => (
+                  <RevendedorJoiaCard 
+                    key={joia.id} 
+                    joia={{
+                      id: joia.id,
+                      codigo: joia.code,
+                      nome: joia.name,
+                      categoria: joia.category?.name || 'Sem categoria',
+                      descricao: joia.description || '',
+                      precoCusto: joia.cost_price,
+                      precoVenda: joia.selling_price || joia.cost_price * 1.5,
+                      quantidade: joia.quantity,
+                      fotos: joia.photos?.map(p => p.url) || []
+                    }} 
+                  />
+                ))}
+              </div>
 
-          {filteredJoias.length === 0 && (
-            <Card className="border-border">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Gem className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma joia encontrada</h3>
-                <p className="text-muted-foreground font-body text-center">
-                  Tente ajustar os filtros para encontrar suas joias.
-                </p>
-              </CardContent>
-            </Card>
+              {filteredJoias.length === 0 && !loading && (
+                <Card className="border-border">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Gem className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-heading text-foreground mb-2">Nenhuma joia encontrada</h3>
+                    <p className="text-muted-foreground font-body text-center">
+                      {joias.length === 0 
+                        ? "Você ainda não possui joias em seu estoque. Entre em contato com a Dalia Joias para receber seu mostruário."
+                        : "Tente ajustar os filtros para encontrar as joias desejadas."
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </main>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Filter, Calendar, Package, Send, X } from "lucide-react"
 import { HistoricoRecebimentoCard } from "@/components/revendedor/historico-recebimento-card"
 import { useAuth } from "@/components/auth/auth-context"
-import { getShowcaseHistory, getShowcaseHistoryStats, handleShowcaseHistoryError, type ShowcaseHistoryItem } from "@/lib/showcase-history-api"
+import { getShowcaseHistory, getShowcaseHistoryStats, handleShowcaseHistoryError, type ShowcaseHistoryItem, type ShowcaseHistoryStats } from "@/lib/showcase-history-api"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/currency"
@@ -22,7 +22,7 @@ export default function RevendedorHistoricoPage() {
 
   const [historico, setHistorico] = useState<ShowcaseHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ totalRecebimentos: 0, totalPecas: 0, valorTotal: 0 })
+  const [stats, setStats] = useState<ShowcaseHistoryStats>({ total_showcases: 0, total_pieces: 0, total_value: 0 })
   
   const { user } = useAuth()
   const { toast } = useToast()

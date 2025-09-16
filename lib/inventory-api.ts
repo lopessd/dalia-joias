@@ -130,34 +130,139 @@ export async function getInventoryStats(): Promise<{
   totalExits: number
   recentMovements: number
 }> {
-  // Total de movimentações
-  const { count: totalMovements } = await supabase
+  const { data: movements, error } = await supabase
     .from('inventory_movements')
-    .select('*', { count: 'exact', head: true })
+    .select('id, quantity, created_at')
 
-  // Entradas (quantity > 0)
-  const { count: totalEntries } = await supabase
-    .from('inventory_movements')
-    .select('*', { count: 'exact', head: true })
-    .gt('quantity', 0)
+  if (error) throw error
 
-  // Saídas (quantity < 0)
-  const { count: totalExits } = await supabase
-    .from('inventory_movements')
-    .select('*', { count: 'exact', head: true })
-    .lt('quantity', 0)
-
+  const totalMovements = movements?.length || 0
+  const totalEntries = movements?.filter(m => m.quantity > 0).length || 0
+  const totalExits = movements?.filter(m => m.quantity < 0).length || 0
+  
   // Movimentações dos últimos 7 dias
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { count: recentMovements } = await supabase
-    .from('inventory_movements')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', sevenDaysAgo)
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const recentMovements = movements?.filter(m => 
+    new Date(m.created_at) >= sevenDaysAgo
+  ).length || 0
 
   return {
-    totalMovements: totalMovements || 0,
-    totalEntries: totalEntries || 0,
-    totalExits: totalExits || 0,
-    recentMovements: recentMovements || 0
+    totalMovements,
+    totalEntries,
+    totalExits,
+    recentMovements
   }
+}
+
+// Interface para joias do distribuidor
+export interface DistributorJewelry {
+  id: number
+  code: string
+  name: string
+  description?: string
+  cost_price: number
+  selling_price?: number
+  category?: {
+    id: number
+    name: string
+  }
+  quantity: number // Quantidade total enviada para o distribuidor
+  showcases: {
+    id: number
+    code: string
+    created_at: string
+    quantity: number // Quantidade enviada neste mostruário específico
+  }[]
+}
+
+// Buscar joias enviadas para um distribuidor específico
+export async function getDistributorJewelry(profileId: string): Promise<DistributorJewelry[]> {
+  // Buscar todos os mostruários do distribuidor
+  const { data: showcases, error: showcaseError } = await supabase
+    .from('showcase')
+    .select('id, code, created_at')
+    .eq('profile_id', profileId)
+    .order('created_at', { ascending: false })
+
+  if (showcaseError) throw showcaseError
+  if (!showcases || showcases.length === 0) return []
+
+  const showcaseIds = showcases.map(s => s.id)
+
+  // Buscar movimentos de inventário para esses mostruários (apenas saídas - quantidade negativa)
+  const { data: movements, error: movementError } = await supabase
+    .from('inventory_movements')
+    .select(`
+      id,
+      product_id,
+      quantity,
+      showcase_id,
+      created_at,
+      product:products(
+        id,
+        code,
+        name,
+        description,
+        cost_price,
+        selling_price,
+        category:categories(id, name)
+      )
+    `)
+    .in('showcase_id', showcaseIds)
+    .lt('quantity', 0) // Apenas saídas (envios para mostruário)
+    .order('created_at', { ascending: false })
+
+  if (movementError) throw movementError
+  if (!movements) return []
+
+  // Agrupar por produto e calcular quantidades
+  const jewelryMap = new Map<number, DistributorJewelry>()
+
+  movements.forEach(movement => {
+    if (!movement.product) return
+
+    const productId = movement.product.id
+    const quantity = Math.abs(movement.quantity) // Converter para positivo
+    const showcase = showcases.find(s => s.id === movement.showcase_id)
+
+    if (!showcase) return
+
+    if (jewelryMap.has(productId)) {
+      const existing = jewelryMap.get(productId)!
+      existing.quantity += quantity
+      
+      // Verificar se já existe este mostruário na lista
+      const existingShowcase = existing.showcases.find(s => s.id === showcase.id)
+      if (existingShowcase) {
+        existingShowcase.quantity += quantity
+      } else {
+        existing.showcases.push({
+          id: showcase.id,
+          code: showcase.code,
+          created_at: showcase.created_at,
+          quantity
+        })
+      }
+    } else {
+      jewelryMap.set(productId, {
+        id: movement.product.id,
+        code: movement.product.code,
+        name: movement.product.name,
+        description: movement.product.description,
+        cost_price: movement.product.cost_price,
+        selling_price: movement.product.selling_price,
+        category: movement.product.category,
+        quantity,
+        showcases: [{
+          id: showcase.id,
+          code: showcase.code,
+          created_at: showcase.created_at,
+          quantity
+        }]
+      })
+    }
+  })
+
+  return Array.from(jewelryMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 }

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Package } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 
 interface Joia {
   id: string
@@ -26,12 +27,7 @@ interface ViewJoiaDialogProps {
 export function ViewJoiaDialog({ open, onOpenChange, joia }: ViewJoiaDialogProps) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const calcularMargem = () => {
     const margem = ((joia.precoVenda - joia.precoCusto) / joia.precoCusto) * 100

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/currency"
 
 interface Joia {
   id: string
@@ -44,12 +45,7 @@ export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogPro
     }
   }, [joia])
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const calcularMargem = (precoVenda: number) => {
     const margem = ((precoVenda - joia.precoCusto) / joia.precoCusto) * 100

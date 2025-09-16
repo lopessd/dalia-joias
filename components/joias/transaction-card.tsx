@@ -4,18 +4,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUp, ArrowDown, Send, Calendar, Package } from "lucide-react"
 import type { InventoryMovement } from "@/lib/inventory-api"
+import { formatCurrency } from "@/lib/currency"
 
 interface TransactionCardProps {
   movement: InventoryMovement
 }
 
 export function TransactionCard({ movement }: TransactionCardProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {

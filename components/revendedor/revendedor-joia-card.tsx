@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreVertical, Eye, Edit, Package } from "lucide-react"
 import { ViewJoiaDialog } from "./view-joia-dialog"
 import { EditPrecoDialog } from "./edit-preco-dialog"
+import { formatCurrency } from "@/lib/currency"
 
 interface Joia {
   id: string
@@ -28,12 +29,7 @@ export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isEditPrecoDialogOpen, setIsEditPrecoDialogOpen] = useState(false)
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const calcularMargem = () => {
     const margem = ((joia.precoVenda - joia.precoCusto) / joia.precoCusto) * 100

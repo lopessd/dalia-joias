@@ -3,12 +3,13 @@
 import { useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShoppingCart, DollarSign, TrendingUp, Plus, Search, Calendar } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Plus, Search, DollarSign, TrendingUp, Package } from "lucide-react"
 import { VendaCard } from "@/components/vendas/venda-card"
 import { CreateVendaDialog } from "@/components/vendas/create-venda-dialog"
+import { formatCurrency } from "@/lib/currency"
 
 // Mock data - in a real app, this would come from an API
 const mockVendas = [
@@ -69,12 +70,7 @@ export default function VendasPage() {
   const valorTotal = mockVendas.reduce((sum, venda) => sum + venda.valor, 0)
   const mediaVenda = totalVendas > 0 ? valorTotal / totalVendas : 0
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   // Filter vendas based on search and date
   const filteredVendas = mockVendas.filter((venda) => {
