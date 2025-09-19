@@ -39,7 +39,7 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
             </div>
             <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(true)} className="gap-2 font-body">
               <Eye className="w-4 h-4" />
-              Ver Detalhes
+              Ver Detalles
             </Button>
           </div>
         </CardHeader>
@@ -48,14 +48,14 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Package className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground font-body">Peças</span>
+                <span className="text-sm text-muted-foreground font-body">Piezas</span>
               </div>
               <p className="text-lg font-heading text-foreground">{recebimento.total_pieces}</p>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Package className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground font-body">Produtos</span>
+                <span className="text-sm text-muted-foreground font-body">Productos</span>
               </div>
               <p className="text-lg font-heading text-foreground">{recebimento.total_products}</p>
             </div>
@@ -70,7 +70,7 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
 
           {/* Products Preview */}
           <div className="mt-4">
-            <h4 className="text-sm font-heading text-foreground mb-2">Produtos Recebidos:</h4>
+            <h4 className="text-sm font-heading text-foreground mb-2">Productos Recibidos:</h4>
             <div className="space-y-1">
               {recebimento.products.slice(0, 3).map((produto, index) => (
                 <div key={index} className="flex justify-between items-center text-sm font-body">
@@ -80,7 +80,7 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
               ))}
               {recebimento.products.length > 3 && (
                 <p className="text-xs text-muted-foreground font-body">
-                  +{recebimento.products.length - 3} produtos...
+                  +{recebimento.products.length - 3} productos...
                 </p>
               )}
             </div>

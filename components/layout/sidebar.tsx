@@ -21,16 +21,16 @@ export function Sidebar({ userType }: SidebarProps) {
   const { logout } = useAuth()
 
   const adminNavItems = [
-    // { href: "/admin/dashboard", label: "Panel de Control", icon: LayoutDashboard }, // Oculto temporariamente
+    //{ href: "/admin/dashboard", label: "Panel de Control", icon: LayoutDashboard },
     { href: "/admin/joias", label: "Joyas", icon: Gem },
     { href: "/admin/revendedores", label: "Distribuidores", icon: Users },
-    { href: "/admin/mostruario", label: "Muestrario", icon: Send }, // Oculto temporariamente
+    { href: "/admin/mostruario", label: "Muestrario", icon: Send },
   ]
 
   const revendedorNavItems = [
-    // { href: "/revendedor/dashboard", label: "Panel de Control", icon: LayoutDashboard }, // Oculto temporariamente
-    { href: "/revendedor/vendas", label: "Ventas", icon: ShoppingCart },
-    { href: "/revendedor/joias", label: "Joyas", icon: Gem },
+    //{ href: "/revendedor/dashboard", label: "Panel de Control", icon: LayoutDashboard },
+    //{ href: "/revendedor/vendas", label: "Ventas", icon: ShoppingCart },
+    //{ href: "/revendedor/joias", label: "Joyas", icon: Gem },
     { href: "/revendedor/historico", label: "Historial", icon: History },
   ]
 

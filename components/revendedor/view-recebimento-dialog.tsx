@@ -28,7 +28,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
       <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-heading">{recebimento.code}</DialogTitle>
-          <DialogDescription className="font-body">Detalhes completos do recebimento</DialogDescription>
+          <DialogDescription className="font-body">Detalles completos de la recepción</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 sm:space-y-6">
@@ -37,7 +37,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
             <CardHeader>
               <CardTitle className="font-heading text-foreground flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Data de Recebimento
+                Fecha de Recepción
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -51,7 +51,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
               <CardContent className="p-3 sm:p-4 text-center">
                 <Package className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-xl sm:text-2xl font-heading text-foreground">{recebimento.total_pieces}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground font-body">Total de Peças</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-body">Total de Piezas</p>
               </CardContent>
             </Card>
 
@@ -59,7 +59,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
               <CardContent className="p-3 sm:p-4 text-center">
                 <Package className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-xl sm:text-2xl font-heading text-foreground">{recebimento.total_products}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground font-body">Produtos Diferentes</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-body">Productos Diferentes</p>
               </CardContent>
             </Card>
 
@@ -75,7 +75,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
           {/* Products List */}
           <Card className="border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-foreground">Lista Detalhada de Produtos</CardTitle>
+              <CardTitle className="font-heading text-foreground">Lista Detallada de Productos</CardTitle>
             </CardHeader>
             <CardContent className="p-3 sm:p-6">
               <div className="space-y-3">
@@ -88,7 +88,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
                       <h4 className="font-heading text-foreground text-sm sm:text-base truncate">{produto.product_name}</h4>
                       <p className="text-xs sm:text-sm text-muted-foreground font-body">Código: {produto.product_code}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground font-body">
-                        Preço unitário: {formatCurrency(produto.selling_price || 0)}
+                        Precio unitario: {formatCurrency(produto.selling_price || 0)}
                       </p>
                     </div>
                     <div className="flex justify-between sm:block sm:text-right shrink-0">
@@ -108,7 +108,7 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
               {/* Total */}
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <p className="text-base sm:text-lg font-heading text-foreground">Total Geral:</p>
+                  <p className="text-base sm:text-lg font-heading text-foreground">Total General:</p>
                   <p className="text-lg sm:text-xl font-heading text-primary">{formatCurrency(recebimento.total_value)}</p>
                 </div>
               </div>
