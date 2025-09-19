@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Gem, Package, DollarSign, TrendingUp, Calendar, ShoppingBag } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 
 export default function RevendedorDashboard() {
   // Mock data - in a real app, this would come from an API
@@ -17,12 +18,7 @@ export default function RevendedorDashboard() {
     mostruariosRecebidos: 3,
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR")

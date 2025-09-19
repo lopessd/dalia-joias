@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Filter, Send, Package, TrendingUp, DollarSign } from "lucide-react"
 import { MostruarioCard } from "@/components/mostruario/mostruario-card"
 import { CreateMostruarioDialog } from "@/components/mostruario/create-mostruario-dialog"
+import { formatCurrency } from "@/lib/currency"
 import { getShowcases, getShowcaseMovements } from "@/lib/showcase-api"
 import { getDistributors } from "@/lib/distributors-api"
 import type { DistributorProfile } from "@/lib/distributors-api"
@@ -83,9 +84,7 @@ export default function MostruarioPage() {
   const valorTotalEnviado = mostruarios.reduce((sum, m) => sum + (m.total_value || 0), 0)
 
 
-  const formatCurrency = (value: number) => {
-    return `₲${value.toLocaleString()}`
-  }
+
 
   return (
     <div className="flex min-h-screen bg-background">

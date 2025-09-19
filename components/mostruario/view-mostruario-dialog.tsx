@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { User, Calendar, Package, DollarSign } from "lucide-react"
 import { useUserProfile } from "@/hooks/use-user-profile"
 import type { ShowcaseWithDetails } from "@/lib/showcase-api"
+import { formatCurrency } from "@/lib/currency"
 
 interface ViewMostruarioDialogProps {
   open: boolean
@@ -16,10 +17,7 @@ interface ViewMostruarioDialogProps {
 export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMostruarioDialogProps) {
   const { profileData } = useUserProfile()
   
-  const formatCurrency = (value: number | undefined) => {
-    if (!value || isNaN(value)) return '₲0'
-    return `₲${value.toLocaleString()}`
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-PY")

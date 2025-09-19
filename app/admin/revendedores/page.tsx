@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, Users, Package, TrendingUp, UserCheck } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
 import { RevendedorCard } from "@/components/revendedores/revendedor-card"
 import { CreateRevendedorDialog } from "@/components/revendedores/create-revendedor-dialog"
 import { getResellers, getResellerStats, handleSupabaseUserError } from "@/lib/users-api"
@@ -144,9 +145,7 @@ export default function RevendedoresPage() {
   const revendedoresAtivos = filteredStats.revendedoresAtivos  
   const revendedoresInativos = filteredStats.revendedoresInativos
 
-  const formatCurrency = (value: number) => {
-    return `₲${value.toLocaleString()}`
-  }
+
 
   return (
     <div className="flex min-h-screen bg-background">

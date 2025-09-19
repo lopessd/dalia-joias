@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Search, Minus, X, Save } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatCurrency } from "@/lib/currency"
 
 // Mock data for available products
 const mockProdutos = [
@@ -96,12 +97,7 @@ export function EditVendaDialog({ open, onOpenChange, venda }: EditVendaDialogPr
     }
   }, [open, venda])
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
-  }
+
 
   const filteredProdutos = mockProdutos.filter(
     (produto) =>

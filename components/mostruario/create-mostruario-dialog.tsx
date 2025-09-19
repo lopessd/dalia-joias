@@ -14,6 +14,7 @@ import { getProductsWithDetails, getCategories } from "@/lib/products-api"
 import { createShowcase } from "@/lib/showcase-api"
 import type { ProductWithDetails, Category } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { formatCurrency } from "@/lib/currency"
 
 interface CreateMostruarioDialogProps {
   open: boolean
@@ -107,9 +108,7 @@ export function CreateMostruarioDialog({ open, onOpenChange, onMostruarioCreated
     return matchesSearch && matchesCategory
    })
 
-  const formatCurrency = (value: number) => {
-    return `₲${value.toLocaleString()}`
-  }
+
 
   const handleSelectRevendedor = (revendedorId: string) => {
     const revendedor = revendedores.find((r) => r.id === revendedorId)
