@@ -163,16 +163,20 @@ export interface DistributorJewelry {
   description?: string
   cost_price: number
   selling_price?: number
+  resale_price?: number // Preço personalizado do revendedor
   category?: {
     id: number
     name: string
-  }
+  } | null
   quantity: number // Quantidade total enviada para o distribuidor
   showcases: {
     id: number
     code: string
     created_at: string
     quantity: number // Quantidade enviada neste mostruário específico
+  }[]
+  photos?: {
+    url: string
   }[]
 }
 
@@ -216,6 +220,26 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
   if (movementError) throw movementError
   if (!movements) return []
 
+  // Buscar preços personalizados do revendedor
+  const productIds = [...new Set(movements.map(m => m.product_id))]
+  const { data: pricingData, error: pricingError } = await supabase
+    .from('product_pricing')
+    .select('product_id, resale_price')
+    .eq('profile_id', profileId)
+    .in('product_id', productIds)
+
+  if (pricingError) {
+    console.error('Erro ao buscar preços personalizados:', pricingError)
+  }
+
+  // Criar mapa de preços personalizados
+  const pricingMap = new Map<number, number>()
+  if (pricingData) {
+    pricingData.forEach(pricing => {
+      pricingMap.set(pricing.product_id, pricing.resale_price)
+    })
+  }
+
   // Agrupar por produto e calcular quantidades
   const jewelryMap = new Map<number, DistributorJewelry>()
 
@@ -252,7 +276,9 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
         description: movement.product.description,
         cost_price: movement.product.cost_price,
         selling_price: movement.product.selling_price,
+        resale_price: pricingMap.get(productId), // Preço personalizado do revendedor
         category: movement.product.category,
+        photos: [], // Inicializar como array vazio por enquanto
         quantity,
         showcases: [{
           id: showcase.id,

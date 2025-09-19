@@ -21,40 +21,41 @@ export default function RevendedorJoiasPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [userProfile, setUserProfile] = useState<string | null>(null)
 
-  // Carregar dados do usuário e joias
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-        setError(null)
+  // Função para carregar dados do usuário e joias
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        // Obter usuário atual
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          setError("Usuário não autenticado")
-          return
-        }
-
-        setUserProfile(user.id)
-
-        // Carregar joias do distribuidor
-        const distributorJewelry = await getDistributorJewelry(user.id)
-        setJoias(distributorJewelry)
-
-        // Extrair categorias únicas
-        const uniqueCategories = Array.from(
-          new Set(distributorJewelry.map(j => j.category?.name).filter(Boolean))
-        ) as string[]
-        setCategories(uniqueCategories)
-
-      } catch (err) {
-        console.error('Erro ao carregar joias:', err)
-        setError(err instanceof Error ? err.message : 'Erro desconhecido')
-      } finally {
-        setLoading(false)
+      // Obter usuário atual
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError("Usuário não autenticado")
+        return
       }
-    }
 
+      setUserProfile(user.id)
+
+      // Carregar joias do distribuidor
+      const distributorJewelry = await getDistributorJewelry(user.id)
+      setJoias(distributorJewelry)
+
+      // Extrair categorias únicas
+      const uniqueCategories = Array.from(
+        new Set(distributorJewelry.map(j => j.category?.name).filter(Boolean))
+      ) as string[]
+      setCategories(uniqueCategories)
+
+    } catch (err) {
+      console.error('Erro ao carregar joias:', err)
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Carregar dados na inicialização
+  useEffect(() => {
     loadData()
   }, [])
 
@@ -208,16 +209,17 @@ export default function RevendedorJoiasPage() {
                   <RevendedorJoiaCard 
                     key={joia.id} 
                     joia={{
-                      id: joia.id,
+                      id: joia.id.toString(),
                       codigo: joia.code,
                       nome: joia.name,
                       categoria: joia.category?.name || 'Sem categoria',
                       descricao: joia.description || '',
-                      precoCusto: joia.cost_price,
-                      precoVenda: joia.selling_price || joia.cost_price * 1.5,
+                      precoCusto: joia.selling_price, // Agora mostra o preço de venda da tabela product
+                      precoVenda: joia.resale_price || joia.selling_price, // Preço personalizado do revendedor ou fallback
                       quantidade: joia.quantity,
                       fotos: joia.photos?.map(p => p.url) || []
                     }} 
+                    onPriceUpdate={loadData}
                   />
                 ))}
               </div>

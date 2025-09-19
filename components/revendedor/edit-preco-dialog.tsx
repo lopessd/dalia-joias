@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/currency"
+import { supabase } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
 interface Joia {
   id: string
@@ -33,47 +35,196 @@ interface EditPrecoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   joia: Joia
+  onSave?: (novoPreco: number) => void
 }
 
-export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogProps) {
+export function EditPrecoDialog({ open, onOpenChange, joia, onSave }: EditPrecoDialogProps) {
   const [novoPreco, setNovoPreco] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [realCostPrice, setRealCostPrice] = useState<number>(0)
+  const [currentResalePrice, setCurrentResalePrice] = useState<number>(0)
+  const { toast } = useToast()
 
+  // Buscar dados do usuário e preços atuais quando o modal abrir
   useEffect(() => {
-    if (joia) {
-      setNovoPreco(joia.precoVenda.toString())
+    if (open && joia) {
+      loadUserAndPricing()
     }
-  }, [joia])
+  }, [open, joia])
+
+  const loadUserAndPricing = async () => {
+    try {
+      // Obter usuário atual
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        })
+        return
+      }
+      
+      setCurrentUserId(user.id)
+
+      // Buscar o preço de custo real (selling_price da tabela products)
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('selling_price')
+        .eq('id', parseInt(joia.id))
+        .single()
+
+      if (productError) {
+        console.error('Erro ao buscar produto:', productError)
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados do produto",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const costPrice = productData.selling_price || 0
+      setRealCostPrice(costPrice)
+
+      // Buscar preço de venda atual na tabela product_pricing
+      const { data: pricingData, error: pricingError } = await supabase
+        .from('product_pricing')
+        .select('resale_price')
+        .eq('product_id', parseInt(joia.id))
+        .eq('profile_id', user.id)
+        .single()
+
+      if (pricingError && pricingError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Erro ao buscar preço de venda:', pricingError)
+      }
+
+      // Se não houver preço registrado, usar o preço de custo como padrão
+      const resalePrice = pricingData?.resale_price || costPrice
+      setCurrentResalePrice(resalePrice)
+      setNovoPreco(resalePrice.toString())
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error)
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados",
+        variant: "destructive"
+      })
+    }
+  }
 
 
 
   const calcularMargem = (precoVenda: number) => {
-    const margem = ((precoVenda - joia.precoCusto) / joia.precoCusto) * 100
+    if (realCostPrice <= 0) return "0.0"
+    const margem = ((precoVenda - realCostPrice) / realCostPrice) * 100
     return margem.toFixed(1)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-
-    const precoNumerico = Number.parseFloat(novoPreco)
-
-    if (precoNumerico <= joia.precoCusto) {
-      alert("O preço de venda deve ser maior que o preço de custo!")
-      setIsLoading(false)
+    
+    if (!currentUserId) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive"
+      })
       return
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Preço atualizado:", {
-        joiaId: joia.id,
-        precoAnterior: joia.precoVenda,
-        novoPreco: precoNumerico,
+    const precoNumerico = Number.parseFloat(novoPreco)
+
+    if (isNaN(precoNumerico) || precoNumerico <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um preço válido",
+        variant: "destructive"
       })
-      setIsLoading(false)
+      return
+    }
+
+    if (precoNumerico <= realCostPrice) {
+      toast({
+        title: "Atenção",
+        description: "O preço de venda deve ser maior que o preço de custo!",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Verificar se já existe um registro na tabela product_pricing
+      const { data: existingPricing, error: checkError } = await supabase
+        .from('product_pricing')
+        .select('id')
+        .eq('product_id', parseInt(joia.id))
+        .eq('profile_id', currentUserId)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError
+      }
+
+      if (existingPricing) {
+        // Atualizar registro existente
+        const { error: updateError } = await supabase
+          .from('product_pricing')
+          .update({ resale_price: precoNumerico })
+          .eq('product_id', parseInt(joia.id))
+          .eq('profile_id', currentUserId)
+
+        if (updateError) throw updateError
+      } else {
+        // Criar novo registro
+        const { error: insertError } = await supabase
+          .from('product_pricing')
+          .insert({
+            product_id: parseInt(joia.id),
+            profile_id: currentUserId,
+            resale_price: precoNumerico
+          })
+
+        if (insertError) throw insertError
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Preço atualizado com sucesso!",
+      })
+      
+      if (onSave) {
+        onSave(precoNumerico)
+      }
       onOpenChange(false)
-    }, 1000)
+    } catch (error) {
+      console.error('Erro ao salvar preço:', error)
+      
+      // Extrair mensagem de erro específica
+      let errorMessage = "Erro ao salvar preço. Tente novamente."
+      
+      if (error && typeof error === 'object') {
+        if ('message' in error && error.message) {
+          errorMessage = error.message
+        } else if ('error' in error && error.error) {
+          errorMessage = error.error
+        } else if ('details' in error && error.details) {
+          errorMessage = error.details
+        }
+      }
+      
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const precoNumerico = Number.parseFloat(novoPreco) || 0
@@ -111,7 +262,7 @@ export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogPro
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-body">Preço de Custo</Label>
-                <Input value={formatCurrency(joia.precoCusto)} disabled className="font-body bg-muted" />
+                <Input value={formatCurrency(realCostPrice)} disabled className="font-body bg-muted" />
                 <p className="text-xs text-muted-foreground font-body">Não editável</p>
               </div>
               <div className="space-y-2">
@@ -122,7 +273,7 @@ export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogPro
                   id="novoPreco"
                   type="number"
                   step="0.01"
-                  min={joia.precoCusto + 0.01}
+                  min={realCostPrice + 0.01}
                   placeholder="0,00"
                   value={novoPreco}
                   onChange={(e) => setNovoPreco(e.target.value)}
@@ -146,14 +297,14 @@ export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogPro
                       <span className="text-sm font-body text-muted-foreground">Nova margem:</span>
                       <span
                         className={`font-heading ${
-                          precoNumerico > joia.precoCusto ? "text-green-600" : "text-red-600"
+                          precoNumerico > realCostPrice ? "text-green-600" : "text-red-600"
                         }`}
                       >
-                        {precoNumerico > joia.precoCusto ? "+" : ""}
+                        {precoNumerico > realCostPrice ? "+" : ""}
                         {calcularMargem(precoNumerico)}%
                       </span>
                     </div>
-                    {precoNumerico <= joia.precoCusto && (
+                    {precoNumerico <= realCostPrice && (
                       <p className="text-xs text-red-600 font-body">Atenção: Preço deve ser maior que o custo!</p>
                     )}
                   </div>
@@ -165,7 +316,7 @@ export function EditPrecoDialog({ open, onOpenChange, joia }: EditPrecoDialogPro
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-body">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading || precoNumerico <= joia.precoCusto} className="font-body">
+              <Button type="submit" disabled={isLoading || precoNumerico <= realCostPrice} className="font-body">
                 {isLoading ? "Salvando..." : "Salvar Preço"}
               </Button>
             </DialogFooter>

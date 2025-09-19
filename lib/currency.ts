@@ -6,7 +6,8 @@ export function formatCurrency(value: number | null | undefined): string {
     return '₲0'
   }
 
-  return `₲${value.toLocaleString()}`
+  // Formatação com separadores de milhares usando ponto
+  return `₲${value.toLocaleString('es-PY')}`
 }
 
 /**
