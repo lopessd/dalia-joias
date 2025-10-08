@@ -7,19 +7,19 @@ import { useToast } from "@/hooks/use-toast"
 
 interface Produto {
   id: string
-  nome: string
-  quantidade: number
-  precoUnitario: number
+  name: string
+  quantity: number
+  unit_price: number
+  total_price: number
 }
 
 interface Venda {
   id: string
-  data: string
-  valor: number
-  quantidadeProdutos: number
-  quantidadeJoias: number
-  observacoes: string
-  produtos: Produto[]
+  created_at: string
+  total_amount: number
+  notes?: string
+  reseller_id: string
+  products: Produto[]
 }
 
 interface DeleteVendaDialogProps {
@@ -79,19 +79,15 @@ export function DeleteVendaDialog({ open, onOpenChange, venda }: DeleteVendaDial
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Data:</span>
-                <span className="text-foreground">{formatDate(venda.data)}</span>
+                <span className="text-foreground">{formatDate(venda.created_at)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Valor:</span>
-                <span className="text-foreground font-heading">{formatCurrency(venda.valor)}</span>
+                <span className="text-foreground font-heading">{formatCurrency(venda.total_amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Produtos:</span>
-                <span className="text-foreground">{venda.quantidadeProdutos}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Joias:</span>
-                <span className="text-foreground">{venda.quantidadeJoias}</span>
+                <span className="text-foreground">{venda.products?.length || 0}</span>
               </div>
             </div>
           </div>

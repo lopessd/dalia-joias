@@ -124,30 +124,30 @@ export function VendaCard({ venda }: VendaCardProps) {
             <div className="border-t border-border pt-4">
               <h4 className="text-sm font-heading text-foreground mb-2">Produtos Vendidos</h4>
               <div className="space-y-2">
-                {venda.produtos.map((produto) => (
+                {venda.products?.map((produto) => (
                   <div key={produto.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
                     <div className="flex-1">
-                      <p className="text-sm font-body text-foreground">{produto.nome}</p>
+                      <p className="text-sm font-body text-foreground">{produto.name}</p>
                       <p className="text-xs text-muted-foreground font-body">
-                        {produto.quantidade}x {formatCurrency(produto.precoUnitario)}
+                        {produto.quantity}x {formatCurrency(produto.unit_price)}
                       </p>
                     </div>
                     <p className="text-sm font-heading text-foreground">
-                      {formatCurrency(produto.quantidade * produto.precoUnitario)}
+                      {formatCurrency(produto.quantity * produto.unit_price)}
                     </p>
                   </div>
-                ))}
+                )) || <p className="text-sm text-muted-foreground">Nenhum produto encontrado</p>}
               </div>
             </div>
 
             {/* Observations */}
-            {venda.observacoes && (
+            {venda.notes && (
               <div className="border-t border-border pt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <h4 className="text-sm font-heading text-foreground">Observações</h4>
                 </div>
-                <p className="text-sm font-body text-muted-foreground">{venda.observacoes}</p>
+                <p className="text-sm font-body text-muted-foreground">{venda.notes}</p>
               </div>
             )}
           </div>
