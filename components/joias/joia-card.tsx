@@ -57,6 +57,11 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
               </div>
               <p className="text-sm text-muted-foreground font-body">Código: {joia.code}</p>
               <p className="text-sm text-muted-foreground font-body">{joia.category?.name || 'Sin categoría'}</p>
+              {joia.description && (
+                <p className="text-xs text-muted-foreground font-body mt-1 line-clamp-2">
+                  {joia.description}
+                </p>
+              )}
               <div className="flex items-center gap-1 mt-1">
                 <Package className="w-4 h-4 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground font-body">
@@ -99,6 +104,10 @@ export function JoiaCard({ joia, onDataChange }: JoiaCardProps) {
               src={joia.photos[0]?.image || "/placeholder.svg"} 
               alt={joia.name} 
               className="w-full h-full object-cover" 
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.svg";
+              }}
             />
           </div>
           <div className="space-y-2">
