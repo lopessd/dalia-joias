@@ -11,6 +11,7 @@ export interface InventoryMovement {
     id: number
     name: string
     code: string
+    description?: string
     cost_price: number
     selling_price?: number | null
     category?: {
@@ -156,6 +157,27 @@ export async function getInventoryStats(): Promise<{
 }
 
 // Interface para joias do distribuidor
+// Interface para os dados retornados pela query do Supabase
+interface MovementWithProduct {
+  id: number
+  product_id: number
+  quantity: number
+  showcase_id: number
+  created_at: string
+  product: {
+    id: number
+    code: string
+    name: string
+    description: string
+    cost_price: number
+    selling_price: number | null
+    category: {
+      id: number
+      name: string
+    } | null
+  } | null
+}
+
 export interface DistributorJewelry {
   id: number
   code: string
@@ -215,7 +237,7 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
     `)
     .in('showcase_id', showcaseIds)
     .lt('quantity', 0) // Apenas saídas (envios para mostruário)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false }) as { data: MovementWithProduct[] | null, error: any }
 
   if (movementError) throw movementError
   if (!movements) return []
@@ -272,12 +294,12 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
       jewelryMap.set(productId, {
         id: movement.product.id,
         code: movement.product.code,
-        name: movement.product.name,
-        description: movement.product.description,
+        name: movement.product.name || '',
+        description: movement.product.description || '',
         cost_price: movement.product.cost_price,
-        selling_price: movement.product.selling_price,
+        selling_price: movement.product.selling_price || undefined,
         resale_price: pricingMap.get(productId), // Preço personalizado do revendedor
-        category: movement.product.category,
+        category: movement.product.category || null,
         photos: [], // Inicializar como array vazio por enquanto
         quantity,
         showcases: [{

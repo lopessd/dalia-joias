@@ -214,8 +214,8 @@ export default function RevendedorJoiasPage() {
                       nome: joia.name,
                       categoria: joia.category?.name || 'Sem categoria',
                       descricao: joia.description || '',
-                      precoCusto: joia.selling_price, // Agora mostra o preço de venda da tabela product
-                      precoVenda: joia.resale_price || joia.selling_price, // Preço personalizado do revendedor ou fallback
+                      precoCusto: joia.cost_price, // Corrigido: usar cost_price em vez de selling_price
+                      precoVenda: joia.resale_price || joia.selling_price || 0, // Preço personalizado do revendedor ou fallback
                       quantidade: joia.quantity,
                       fotos: joia.photos?.map(p => p.url) || []
                     }} 

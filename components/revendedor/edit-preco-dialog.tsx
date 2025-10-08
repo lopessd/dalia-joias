@@ -208,11 +208,11 @@ export function EditPrecoDialog({ open, onOpenChange, joia, onSave }: EditPrecoD
       let errorMessage = "Erro ao salvar preço. Tente novamente."
       
       if (error && typeof error === 'object') {
-        if ('message' in error && error.message) {
+        if ('message' in error && typeof error.message === 'string') {
           errorMessage = error.message
-        } else if ('error' in error && error.error) {
+        } else if ('error' in error && typeof error.error === 'string') {
           errorMessage = error.error
-        } else if ('details' in error && error.details) {
+        } else if ('details' in error && typeof error.details === 'string') {
           errorMessage = error.details
         }
       }

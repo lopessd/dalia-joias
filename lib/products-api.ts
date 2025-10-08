@@ -151,6 +151,141 @@ export function handleSupabaseError(error: any): string {
 
 // Validação de URL de imagem
 export function validateImageUrl(url: string): boolean {
-  const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i
-  return imageExtensions.test(url) || url.includes('placeholder')
+  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')
+}
+
+// Interface para produtos com estoque
+export interface ProductWithStock {
+  id: string
+  code: string
+  name: string
+  category_id: number
+  category_name: string
+  sale_price: number
+  cost_price: number
+  stock_quantity: number
+}
+
+export interface ProductSearchResult {
+  products: ProductWithStock[]
+  total: number
+}
+
+// Buscar produtos do revendedor com estoque disponível
+export async function getResellerProducts(
+  searchTerm?: string,
+  limit: number = 50
+): Promise<ProductSearchResult> {
+  try {
+    // Construir a query base
+    let query = supabase
+      .from('products')
+      .select(`
+        id,
+        code,
+        name,
+        category_id,
+        categories!inner(name),
+        selling_price,
+        cost_price,
+        inventory_movements(quantity)
+      `)
+      .eq('active', true)
+
+    // Adicionar filtro de busca se fornecido
+    if (searchTerm && searchTerm.trim()) {
+      const term = searchTerm.trim()
+      query = query.or(`code.ilike.%${term}%,name.ilike.%${term}%,categories.name.ilike.%${term}%`)
+    }
+
+    // Executar a query
+    const { data, error } = await query
+      .order('name')
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching products:', error)
+      throw error
+    }
+
+    // Processar os dados e calcular estoque
+    const products: ProductWithStock[] = (data || []).map((item: any) => {
+      // Calcular estoque total somando os movimentos de inventário
+      const stockQuantity = item.inventory_movements?.reduce((total: number, movement: any) => {
+        return total + (movement.quantity || 0)
+      }, 0) || 0
+
+      return {
+        id: item.id.toString(),
+        code: item.code || '',
+        name: item.name || '',
+        category_id: item.category_id || 0,
+        category_name: item.categories?.name || 'Sem categoria',
+        sale_price: parseFloat(item.selling_price || '0'),
+        cost_price: parseFloat(item.cost_price || '0'),
+        stock_quantity: stockQuantity
+      }
+    }).filter(product => product.stock_quantity > 0) // Filtrar apenas produtos com estoque
+
+    return {
+      products,
+      total: products.length
+    }
+  } catch (error) {
+    console.error('Error in getResellerProducts:', error)
+    return {
+      products: [],
+      total: 0
+    }
+  }
+}
+
+// Buscar produto específico por ID com estoque
+export async function getProductWithStock(id: string): Promise<ProductWithStock | null> {
+  try {
+    const query = `
+      SELECT 
+        p.id, 
+        p.code, 
+        p.name, 
+        p.category_id,
+        c.name as category_name,
+        p.selling_price as sale_price,
+        p.cost_price,
+        COALESCE(SUM(im.quantity), 0) as stock_quantity
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN inventory_movements im ON p.id = im.product_id
+      WHERE p.id = ${id} AND p.active = true
+      GROUP BY p.id, p.code, p.name, p.category_id, c.name, p.selling_price, p.cost_price
+    `
+
+    const { data, error } = await supabase.rpc('execute_sql', {
+      query: query
+    })
+
+    if (error) {
+      console.error('Error fetching product:', error)
+      throw error
+    }
+
+    if (!data || data.length === 0) {
+      return null
+    }
+
+    const item = data[0]
+    return {
+      id: item.id.toString(),
+      code: item.code,
+      name: item.name,
+      category_id: item.category_id,
+      category_name: item.category_name || 'Sem categoria',
+      sale_price: parseFloat(item.sale_price || '0'),
+      cost_price: parseFloat(item.cost_price || '0'),
+      stock_quantity: parseInt(item.stock_quantity || '0')
+    }
+  } catch (error) {
+    console.error('Error in getProductWithStock:', error)
+    return null
+  }
 }

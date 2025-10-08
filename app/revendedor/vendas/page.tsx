@@ -1,17 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Plus, Search, DollarSign, TrendingUp, Package } from "lucide-react"
+import { Plus, Search, DollarSign, TrendingUp, Package, ShoppingCart, CalendarIcon } from "lucide-react"
 import { VendaCard } from "@/components/vendas/venda-card"
 import { CreateVendaDialog } from "@/components/vendas/create-venda-dialog"
 import { formatCurrency } from "@/lib/currency"
+import { useAuth } from "@/components/auth/auth-context"
+import { getResellerSales, getResellerSalesSummary, type SaleWithProducts, type SalesSummary } from "@/lib/sales-api"
+import { useToast } from "@/hooks/use-toast"
 
-// Mock data - in a real app, this would come from an API
+// Mock data - will be replaced by real data
 const mockVendas = [
   {
     id: "1",
@@ -61,25 +64,78 @@ const mockVendas = [
 ]
 
 export default function VendasPage() {
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [dateFilter, setDateFilter] = useState("")
+  const [vendas, setVendas] = useState<SaleWithProducts[]>([])
+  const [summary, setSummary] = useState<SalesSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Calculate summary data
-  const totalVendas = mockVendas.length
-  const valorTotal = mockVendas.reduce((sum, venda) => sum + venda.valor, 0)
-  const mediaVenda = totalVendas > 0 ? valorTotal / totalVendas : 0
+  // Load sales data
+  useEffect(() => {
+    const loadSalesData = async () => {
+      if (!user?.id) return
 
+      try {
+        setIsLoading(true)
+        const [salesData, summaryData] = await Promise.all([
+          getResellerSales(user.id),
+          getResellerSalesSummary(user.id)
+        ])
+        
+        setVendas(salesData)
+        setSummary(summaryData)
+      } catch (error) {
+        console.error('Erro ao carregar dados de vendas:', error)
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados de vendas",
+          variant: "destructive"
+        })
+        // Fallback to mock data if API fails
+        setVendas(mockVendas.map(venda => ({
+          id: venda.id,
+          created_at: venda.data,
+          total_amount: venda.valor,
+          notes: venda.observacoes,
+          reseller_id: user.id,
+          products: venda.produtos.map(produto => ({
+            id: produto.id,
+            name: produto.nome,
+            quantity: produto.quantidade,
+            unit_price: produto.precoUnitario,
+            total_price: produto.quantidade * produto.precoUnitario
+          }))
+        })))
+        setSummary({
+          total_sales: mockVendas.length,
+          total_amount: mockVendas.reduce((sum, venda) => sum + venda.valor, 0),
+          average_sale: mockVendas.length > 0 ? mockVendas.reduce((sum, venda) => sum + venda.valor, 0) / mockVendas.length : 0,
+          total_products: mockVendas.reduce((sum, venda) => sum + venda.quantidadeProdutos, 0)
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
+    loadSalesData()
+  }, [user?.id, toast])
+
+  // Calculate summary data from loaded data or use API summary
+  const totalVendas = summary?.total_sales || 0
+  const valorTotal = summary?.total_amount || 0
+  const mediaVenda = summary?.average_sale || 0
 
   // Filter vendas based on search and date
-  const filteredVendas = mockVendas.filter((venda) => {
+  const filteredVendas = vendas.filter((venda) => {
     const matchesSearch =
       searchTerm === "" ||
-      venda.observacoes.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venda.produtos.some((produto) => produto.nome.toLowerCase().includes(searchTerm.toLowerCase()))
+      venda.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      venda.products.some((produto) => produto.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    const matchesDate = dateFilter === "" || venda.data.includes(dateFilter)
+    const matchesDate = dateFilter === "" || venda.created_at.includes(dateFilter)
 
     return matchesSearch && matchesDate
   })
@@ -166,7 +222,7 @@ export default function VendasPage() {
                     Data
                   </Label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       id="date"
                       type="date"

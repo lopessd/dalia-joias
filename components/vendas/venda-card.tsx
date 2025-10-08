@@ -11,19 +11,19 @@ import { DeleteVendaDialog } from "./delete-venda-dialog"
 
 interface Produto {
   id: string
-  nome: string
-  quantidade: number
-  precoUnitario: number
+  name: string
+  quantity: number
+  unit_price: number
+  total_price: number
 }
 
 interface Venda {
   id: string
-  data: string
-  valor: number
-  quantidadeProdutos: number
-  quantidadeJoias: number
-  observacoes: string
-  produtos: Produto[]
+  created_at: string
+  total_amount: number
+  notes?: string
+  reseller_id: string
+  products: Produto[]
 }
 
 interface VendaCardProps {
@@ -54,12 +54,12 @@ export function VendaCard({ venda }: VendaCardProps) {
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-heading text-foreground text-lg">Venda #{venda.id}</h3>
                 <Badge variant="outline" className="text-xs font-body">
-                  {formatDate(venda.data)}
+                  {formatDate(venda.created_at)}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                 <Calendar className="w-3 h-3" />
-                {formatDate(venda.data)}
+                {formatDate(venda.created_at)}
               </div>
             </div>
             <DropdownMenu>
@@ -93,21 +93,21 @@ export function VendaCard({ venda }: VendaCardProps) {
                   <DollarSign className="w-3 h-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground font-body">Valor</span>
                 </div>
-                <p className="text-lg font-heading text-foreground">{formatCurrency(venda.valor)}</p>
+                <p className="text-lg font-heading text-foreground">{formatCurrency(venda.total_amount)}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Package className="w-3 h-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground font-body">Produtos</span>
                 </div>
-                <p className="text-lg font-heading text-foreground">{venda.quantidadeProdutos}</p>
+                <p className="text-lg font-heading text-foreground">{venda.products.length}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Gem className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-body">Joias</span>
+                  <span className="text-xs text-muted-foreground font-body">Itens</span>
                 </div>
-                <p className="text-lg font-heading text-foreground">{venda.quantidadeJoias}</p>
+                <p className="text-lg font-heading text-foreground">{venda.products.reduce((sum, p) => sum + p.quantity, 0)}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
@@ -115,7 +115,7 @@ export function VendaCard({ venda }: VendaCardProps) {
                   <span className="text-xs text-muted-foreground font-body">Média</span>
                 </div>
                 <p className="text-lg font-heading text-foreground">
-                  {formatCurrency(venda.valor / venda.quantidadeJoias)}
+                  {formatCurrency(venda.products.length > 0 ? venda.total_amount / venda.products.length : 0)}
                 </p>
               </div>
             </div>
