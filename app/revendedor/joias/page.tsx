@@ -70,7 +70,7 @@ export default function RevendedorJoiasPage() {
   const totalPecas = joias.reduce((sum, joia) => sum + joia.quantity, 0)
   const totalProdutos = joias.length
   const valorTotalEstoque = joias.reduce((sum, joia) => {
-    const precoVenda = joia.selling_price || joia.cost_price * 1.5 // Fallback se não tiver preço de venda
+    const precoVenda = joia.selling_price || 0
     return sum + joia.quantity * precoVenda
   }, 0)
 
@@ -214,12 +214,10 @@ export default function RevendedorJoiasPage() {
                       nome: joia.name,
                       categoria: joia.category?.name || 'Sem categoria',
                       descricao: joia.description || '',
-                      precoCusto: joia.cost_price, // Corrigido: usar cost_price em vez de selling_price
-                      precoVenda: joia.resale_price || joia.selling_price || 0, // Preço personalizado do revendedor ou fallback
+                      precoVenda: joia.selling_price || 0,
                       quantidade: joia.quantity,
                       fotos: joia.photos?.map(p => p.url) || []
-                    }} 
-                    onPriceUpdate={loadData}
+                    }}
                   />
                 ))}
               </div>

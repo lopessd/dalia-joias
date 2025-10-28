@@ -12,7 +12,6 @@ interface Joia {
   nome: string
   categoria: string
   descricao: string
-  precoCusto: number
   precoVenda: number
   quantidade: number
   fotos: string[]
@@ -26,13 +25,6 @@ interface ViewJoiaDialogProps {
 
 export function ViewJoiaDialog({ open, onOpenChange, joia }: ViewJoiaDialogProps) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
-
-
-
-  const calcularMargem = () => {
-    const margem = ((joia.precoVenda - joia.precoCusto) / joia.precoCusto) * 100
-    return margem.toFixed(1)
-  }
 
   const nextPhoto = () => {
     setCurrentPhotoIndex((prev) => (prev + 1) % joia.fotos.length)
@@ -117,17 +109,9 @@ export function ViewJoiaDialog({ open, onOpenChange, joia }: ViewJoiaDialogProps
             {/* Pricing Details */}
             <div className="p-4 bg-muted rounded-lg space-y-3">
               <h4 className="font-heading text-foreground">Informações de Preço</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground font-body">Preço de Custo</p>
-                  <p className="text-lg font-heading text-foreground">{formatCurrency(joia.precoCusto)}</p>
-                  <p className="text-xs text-muted-foreground font-body">Não editável</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground font-body">Preço de Venda</p>
-                  <p className="text-lg font-heading text-primary">{formatCurrency(joia.precoVenda)}</p>
-                  <p className="text-xs text-green-600 font-body">Margem: +{calcularMargem()}%</p>
-                </div>
+              <div>
+                <p className="text-sm text-muted-foreground font-body">Preço de Venda</p>
+                <p className="text-lg font-heading text-primary">{formatCurrency(joia.precoVenda)}</p>
               </div>
             </div>
 

@@ -202,21 +202,40 @@ export interface DistributorJewelry {
   }[]
 }
 
-// Buscar joias enviadas para um distribuidor específico
+// Buscar joias enviadas para um distribuidor específico (apenas mostruários ativos)
 export async function getDistributorJewelry(profileId: string): Promise<DistributorJewelry[]> {
-  // Buscar todos os mostruários do distribuidor
-  const { data: showcases, error: showcaseError } = await supabase
+  // Primeiro, buscar todos os mostruários do distribuidor
+  const { data: allShowcases, error: showcaseError } = await supabase
     .from('showcase')
-    .select('id, code, created_at')
+    .select('id, code, created_at, profile_id')
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false })
 
   if (showcaseError) throw showcaseError
-  if (!showcases || showcases.length === 0) return []
+  if (!allShowcases || allShowcases.length === 0) return []
 
-  const showcaseIds = showcases.map(s => s.id)
+  // Identificar mostruários ativos (sem retornos registrados)
+  const showcaseIds = allShowcases.map(s => s.id)
+  const { data: returnsData, error: returnsError } = await supabase
+    .from('showcase_returns')
+    .select('showcase_id')
+    .in('showcase_id', showcaseIds)
 
-  // Buscar movimentos de inventário para esses mostruários (apenas saídas - quantidade negativa)
+  if (returnsError) {
+    console.error('Erro ao buscar retornos:', returnsError)
+    throw returnsError
+  }
+
+  // Criar conjunto de mostruários finalizados
+  const finalizedShowcaseIds = new Set((returnsData || []).map(r => r.showcase_id))
+
+  // Filtrar apenas mostruários ativos
+  const activeShowcases = allShowcases.filter(s => !finalizedShowcaseIds.has(s.id))
+  const activeShowcaseIds = activeShowcases.map(s => s.id)
+
+  if (activeShowcaseIds.length === 0) return []
+
+  // Buscar movimentos de inventário para mostruários ativos (apenas saídas - quantidade negativa)
   const { data: movements, error: movementError } = await supabase
     .from('inventory_movements')
     .select(`
@@ -235,15 +254,40 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
         category:categories(id, name)
       )
     `)
-    .in('showcase_id', showcaseIds)
+    .in('showcase_id', activeShowcaseIds)
     .lt('quantity', 0) // Apenas saídas (envios para mostruário)
     .order('created_at', { ascending: false }) as { data: MovementWithProduct[] | null, error: any }
 
   if (movementError) throw movementError
   if (!movements) return []
 
-  // Buscar preços personalizados do revendedor
+  // Buscar vendas do distribuidor para subtrair do estoque
   const productIds = [...new Set(movements.map(m => m.product_id))]
+  const { data: salesData, error: salesError } = await supabase
+    .from('sold_products')
+    .select(`
+      product_id,
+      quantity,
+      sales!inner(profile_id)
+    `)
+    .eq('sales.profile_id', profileId)
+    .in('product_id', productIds)
+
+  if (salesError) {
+    console.error('Erro ao buscar vendas:', salesError)
+    // Se houver erro na busca de vendas, continuar sem subtrair (estoque = recebido)
+  }
+
+  // Criar mapa de vendas por produto
+  const salesMap = new Map<number, number>()
+  if (salesData) {
+    salesData.forEach(sale => {
+      const current = salesMap.get(sale.product_id) || 0
+      salesMap.set(sale.product_id, current + sale.quantity)
+    })
+  }
+
+  // Buscar preços personalizados do revendedor
   const { data: pricingData, error: pricingError } = await supabase
     .from('product_pricing')
     .select('product_id, resale_price')
@@ -262,32 +306,37 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
     })
   }
 
-  // Agrupar por produto e calcular quantidades
+  // Agrupar por produto e calcular quantidades (recebidas - vendidas)
   const jewelryMap = new Map<number, DistributorJewelry>()
 
   movements.forEach(movement => {
     if (!movement.product) return
 
     const productId = movement.product.id
-    const quantity = Math.abs(movement.quantity) // Converter para positivo
-    const showcase = showcases.find(s => s.id === movement.showcase_id)
+    const receivedQuantity = Math.abs(movement.quantity) // Quantidade recebida no mostruário
+    const soldQuantity = salesMap.get(productId) || 0 // Quantidade já vendida
+    const availableQuantity = Math.max(0, receivedQuantity - soldQuantity) // Estoque disponível
 
+    // Só incluir produtos que ainda têm estoque disponível
+    if (availableQuantity <= 0) return
+
+    const showcase = activeShowcases.find(s => s.id === movement.showcase_id)
     if (!showcase) return
 
     if (jewelryMap.has(productId)) {
       const existing = jewelryMap.get(productId)!
-      existing.quantity += quantity
-      
+      existing.quantity += availableQuantity
+
       // Verificar se já existe este mostruário na lista
       const existingShowcase = existing.showcases.find(s => s.id === showcase.id)
       if (existingShowcase) {
-        existingShowcase.quantity += quantity
+        existingShowcase.quantity += receivedQuantity // Manter quantidade total recebida
       } else {
         existing.showcases.push({
           id: showcase.id,
           code: showcase.code,
           created_at: showcase.created_at,
-          quantity
+          quantity: receivedQuantity
         })
       }
     } else {
@@ -301,12 +350,12 @@ export async function getDistributorJewelry(profileId: string): Promise<Distribu
         resale_price: pricingMap.get(productId), // Preço personalizado do revendedor
         category: movement.product.category || null,
         photos: [], // Inicializar como array vazio por enquanto
-        quantity,
+        quantity: availableQuantity, // Quantidade disponível (recebida - vendida)
         showcases: [{
           id: showcase.id,
           code: showcase.code,
           created_at: showcase.created_at,
-          quantity
+          quantity: receivedQuantity // Quantidade total recebida neste mostruário
         }]
       })
     }

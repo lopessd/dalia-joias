@@ -2,7 +2,8 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Package, DollarSign } from "lucide-react"
+import { Calendar, Package, DollarSign, CheckCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { type ShowcaseHistoryItem } from "@/lib/showcase-history-api"
 import { formatCurrency } from "@/lib/currency"
 
@@ -27,7 +28,13 @@ export function ViewRecebimentoDialog({ open, onOpenChange, recebimento }: ViewR
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="font-heading">{recebimento.code}</DialogTitle>
+          <div className="flex items-center gap-3">
+            <DialogTitle className="font-heading">{recebimento.code}</DialogTitle>
+            <Badge variant="secondary" className="text-xs font-body bg-green-100 text-green-800 border-green-200">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Activo
+            </Badge>
+          </div>
           <DialogDescription className="font-body">Detalles completos de la recepción</DialogDescription>
         </DialogHeader>
 

@@ -4,9 +4,8 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreVertical, Eye, Edit, Package } from "lucide-react"
+import { MoreVertical, Eye, Package } from "lucide-react"
 import { ViewJoiaDialog } from "./view-joia-dialog"
-import { EditPrecoDialog } from "./edit-preco-dialog"
 import { formatCurrency } from "@/lib/currency"
 
 interface Joia {
@@ -15,7 +14,6 @@ interface Joia {
   nome: string
   categoria: string
   descricao: string
-  precoCusto: number
   precoVenda: number
   quantidade: number
   fotos: string[]
@@ -23,34 +21,10 @@ interface Joia {
 
 interface RevendedorJoiaCardProps {
   joia: Joia
-  onPriceUpdate?: () => void
 }
 
-export function RevendedorJoiaCard({ joia, onPriceUpdate }: RevendedorJoiaCardProps) {
+export function RevendedorJoiaCard({ joia }: RevendedorJoiaCardProps) {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isEditPrecoDialogOpen, setIsEditPrecoDialogOpen] = useState(false)
-
-  const handlePriceSave = (novoPreco: number) => {
-    // Atualizar o preço localmente se necessário
-    if (onPriceUpdate) {
-      onPriceUpdate()
-    }
-  }
-
-
-
-  const calcularMargem = () => {
-    if (joia.precoCusto <= 0) return "0.0"
-    const margem = ((joia.precoVenda - joia.precoCusto) / joia.precoCusto) * 100
-    return margem.toFixed(1)
-  }
-
-  const getMargemColor = () => {
-    const margem = parseFloat(calcularMargem())
-    if (margem > 0) return "text-green-600"
-    if (margem < 0) return "text-red-600"
-    return "text-muted-foreground"
-  }
 
   return (
     <>
@@ -75,10 +49,6 @@ export function RevendedorJoiaCard({ joia, onPriceUpdate }: RevendedorJoiaCardPr
                   <Eye className="mr-2 h-4 w-4" />
                   Ver Joia
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsEditPrecoDialogOpen(true)} className="font-body">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar Precio
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -93,18 +63,8 @@ export function RevendedorJoiaCard({ joia, onPriceUpdate }: RevendedorJoiaCardPr
             {/* Pricing Info */}
             <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border/50">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground font-body">Costo</span>
-                <span className="text-sm font-heading text-foreground font-medium">{formatCurrency(joia.precoCusto)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground font-body">Venta</span>
+                <span className="text-xs text-muted-foreground font-body">Precio de Venta</span>
                 <span className="text-sm font-heading text-primary font-semibold">{formatCurrency(joia.precoVenda)}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                <span className="text-xs text-muted-foreground font-body">Margem</span>
-                <span className={`text-sm font-heading font-medium ${getMargemColor()}`}>
-                  {parseFloat(calcularMargem()) >= 0 ? '+' : ''}{calcularMargem()}%
-                </span>
               </div>
             </div>
 
@@ -121,12 +81,6 @@ export function RevendedorJoiaCard({ joia, onPriceUpdate }: RevendedorJoiaCardPr
       </Card>
 
       <ViewJoiaDialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen} joia={joia} />
-      <EditPrecoDialog 
-        open={isEditPrecoDialogOpen} 
-        onOpenChange={setIsEditPrecoDialogOpen} 
-        joia={joia} 
-        onSave={handlePriceSave}
-      />
     </>
   )
 }

@@ -83,7 +83,7 @@ export async function getResellerSales(resellerId: string): Promise<SaleWithProd
 
     // Transformar os dados para o formato esperado
     const salesWithProducts = sales.map((sale) => {
-      const products: SoldProduct[] = (sale.sold_products || []).map((soldProduct: any) => ({
+      const products = (sale.sold_products || []).map((soldProduct: any) => ({
         id: soldProduct.products?.id?.toString() || soldProduct.id.toString(),
         name: soldProduct.products?.name || 'Produto sem nome',
         quantity: soldProduct.quantity,
@@ -91,14 +91,14 @@ export async function getResellerSales(resellerId: string): Promise<SaleWithProd
         total_price: soldProduct.quantity * Number(soldProduct.sold_price)
       }))
 
-      const totalAmount = products.reduce((sum, p) => sum + p.total_price, 0)
+      const totalAmount = products.reduce((sum: number, p: any) => sum + p.total_price, 0)
 
       return {
           id: sale.id.toString(),
           created_at: sale.created_at,
           total_amount: totalAmount,
           notes: sale.description || '',
-          profile_id: sale.profile_id,
+          reseller_id: sale.profile_id,
           products: products
         }
     })
@@ -158,6 +158,220 @@ export async function createSale(resellerId: string, description?: string): Prom
   } catch (error) {
     console.error('Erro na função createSale:', error)
     return null
+  }
+}
+
+// Interface para criar venda de mostruário
+export interface CreateShowcaseSaleData {
+  showcase_id: number
+  profile_id: string
+  description?: string
+  products: {
+    product_id: number
+    quantity: number
+    sold_price: number
+    commission_percentage: number
+  }[]
+}
+
+// Interface para detalhes da venda de mostruário
+export interface ShowcaseSaleDetails {
+  id: number
+  showcase_id: number
+  profile_id: string
+  description?: string
+  total_value: number
+  created_at: string
+  products: {
+    sold_product_id: number
+    product_id: number
+    product_name: string
+    product_code: string
+    quantity: number
+    sold_price: number
+    commission_percentage: number
+  }[]
+}
+
+// Interface para atualizar venda
+export interface UpdateShowcaseSaleData {
+  sale_id: number
+  description?: string
+  products: {
+    sold_product_id: number
+    commission_percentage: number
+  }[]
+}
+
+// Função para criar venda de mostruário com produtos e comissões
+export async function createShowcaseSale(data: CreateShowcaseSaleData): Promise<void> {
+  try {
+    // Verificar se já existe venda para este mostruário
+    const { data: existingSale, error: checkError } = await supabase
+      .from('sales')
+      .select('id')
+      .eq('showcase_id', data.showcase_id)
+      .maybeSingle()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Erro ao verificar venda existente:', checkError)
+      throw new Error(`Erro ao verificar venda: ${checkError.message}`)
+    }
+
+    if (existingSale) {
+      throw new Error('Já existe uma venda registrada para este mostruário. Não é possível criar venda duplicada.')
+    }
+
+    // Calcular valor total da venda
+    const totalValue = data.products.reduce((sum, p) => sum + (p.quantity * p.sold_price), 0)
+
+    // 1. Criar a venda
+    const { data: sale, error: saleError } = await supabase
+      .from('sales')
+      .insert({
+        profile_id: data.profile_id,
+        showcase_id: data.showcase_id,
+        description: data.description || null,
+        total_value: totalValue
+      })
+      .select()
+      .single()
+
+    if (saleError) {
+      console.error('Erro ao criar venda:', saleError)
+      
+      // Verificar se é erro de constraint de duplicata
+      if (saleError.code === '23505' || saleError.message.includes('sales_showcase_id_unique')) {
+        throw new Error('Já existe uma venda registrada para este mostruário.')
+      }
+      
+      throw new Error(`Erro ao criar venda: ${saleError.message}`)
+    }
+
+    // 2. Criar produtos vendidos com comissões
+    const soldProducts = data.products.map(p => ({
+      sale_id: sale.id,
+      product_id: p.product_id,
+      quantity: p.quantity,
+      sold_price: p.sold_price,
+      commission_percentage: p.commission_percentage
+    }))
+
+    const { error: productsError } = await supabase
+      .from('sold_products')
+      .insert(soldProducts)
+
+    if (productsError) {
+      console.error('Erro ao adicionar produtos à venda:', productsError)
+      throw new Error(`Erro ao adicionar produtos: ${productsError.message}`)
+    }
+
+  } catch (error) {
+    console.error('Erro na função createShowcaseSale:', error)
+    throw error
+  }
+}
+
+// Função para buscar detalhes de uma venda de mostruário
+export async function getShowcaseSale(saleId: number): Promise<ShowcaseSaleDetails> {
+  try {
+    const { data: sale, error: saleError } = await supabase
+      .from('sales')
+      .select(`
+        id,
+        showcase_id,
+        profile_id,
+        description,
+        total_value,
+        created_at
+      `)
+      .eq('id', saleId)
+      .single()
+
+    if (saleError) {
+      console.error('Erro ao buscar venda:', saleError)
+      throw new Error(`Erro ao buscar venda: ${saleError.message}`)
+    }
+
+    // Buscar produtos vendidos
+    const { data: products, error: productsError } = await supabase
+      .from('sold_products')
+      .select(`
+        id,
+        product_id,
+        quantity,
+        sold_price,
+        commission_percentage,
+        products (
+          name,
+          code
+        )
+      `)
+      .eq('sale_id', saleId)
+
+    if (productsError) {
+      console.error('Erro ao buscar produtos da venda:', productsError)
+      throw new Error(`Erro ao buscar produtos: ${productsError.message}`)
+    }
+
+    // Formatar resposta
+    return {
+      id: sale.id,
+      showcase_id: sale.showcase_id,
+      profile_id: sale.profile_id,
+      description: sale.description,
+      total_value: Number(sale.total_value),
+      created_at: sale.created_at,
+      products: products.map((p: any) => ({
+        sold_product_id: p.id,
+        product_id: p.product_id,
+        product_name: p.products?.name || 'Produto desconhecido',
+        product_code: p.products?.code || 'N/A',
+        quantity: p.quantity,
+        sold_price: Number(p.sold_price),
+        commission_percentage: Number(p.commission_percentage || 0)
+      }))
+    }
+  } catch (error) {
+    console.error('Erro na função getShowcaseSale:', error)
+    throw error
+  }
+}
+
+// Função para atualizar comissões de uma venda
+export async function updateShowcaseSale(data: UpdateShowcaseSaleData): Promise<void> {
+  try {
+    // 1. Atualizar descrição da venda (se fornecida)
+    if (data.description !== undefined) {
+      const { error: saleError } = await supabase
+        .from('sales')
+        .update({ description: data.description })
+        .eq('id', data.sale_id)
+
+      if (saleError) {
+        console.error('Erro ao atualizar venda:', saleError)
+        throw new Error(`Erro ao atualizar venda: ${saleError.message}`)
+      }
+    }
+
+    // 2. Atualizar comissões dos produtos
+    for (const product of data.products) {
+      const { error: productError } = await supabase
+        .from('sold_products')
+        .update({
+          commission_percentage: product.commission_percentage
+        })
+        .eq('id', product.sold_product_id)
+
+      if (productError) {
+        console.error('Erro ao atualizar produto:', productError)
+        throw new Error(`Erro ao atualizar comissão do produto: ${productError.message}`)
+      }
+    }
+
+  } catch (error) {
+    console.error('Erro na função updateShowcaseSale:', error)
+    throw error
   }
 }
 
@@ -221,7 +435,7 @@ export async function getResellerSalesByPeriod(
         total_price: soldProduct.total_price
       }))
 
-      const totalAmount = products.reduce((sum, p) => sum + p.total_price, 0)
+      const totalAmount = products.reduce((sum: number, p: any) => sum + p.total_price, 0)
 
       return {
         id: sale.id,

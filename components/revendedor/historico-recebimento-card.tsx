@@ -1,8 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Package, DollarSign, Eye } from "lucide-react"
+import { Calendar, Package, DollarSign, Eye, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useState } from "react"
 import { ViewRecebimentoDialog } from "./view-recebimento-dialog"
 import { type ShowcaseHistoryItem } from "@/lib/showcase-history-api"
@@ -31,8 +32,14 @@ export function HistoricoRecebimentoCard({ recebimento }: HistoricoRecebimentoCa
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="font-heading text-foreground">{recebimento.code}</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground font-body mt-1">
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="font-heading text-foreground">{recebimento.code}</CardTitle>
+                <Badge variant="secondary" className="text-xs font-body bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Activo
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                 <Calendar className="w-3 h-3" />
                 {formatDate(recebimento.created_at)}
               </div>

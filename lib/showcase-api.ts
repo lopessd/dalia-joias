@@ -18,9 +18,18 @@ export interface ShowcaseWithDetails {
   code: string
   created_at: string
   profile_id: string
-  status: string
+  status: 'entregue' | 'finalizado'  // Status calculado baseado em retornos
   total_pieces?: number
   total_value?: number
+  has_returns?: boolean  // Indica se tem retornos registrados
+  has_sale?: boolean  // Indica se já tem venda registrada
+  sale_id?: number  // ID da venda registrada (se houver)
+  finished_at?: string  // Data de finalização (data do primeiro retorno)
+  showcase_returns?: {
+    product_id: number
+    returned_quantity: number
+    returned_at?: string
+  }[]
   distributor_profile?: {
     id: string
     name?: string
@@ -197,6 +206,60 @@ export async function getShowcases(): Promise<ShowcaseWithDetails[]> {
       throw new Error(`Erro ao buscar mostruários: ${error.message}`)
     }
 
+    // Buscar informações de retornos separadamente
+    const showcaseIds = (data || []).map(s => s.id)
+    
+    // Criar mapa de retornos por showcase_id
+    const returnsMap: Record<number, { product_id: number; returned_quantity: number; returned_at?: string }[]> = {}
+    const finishedAtMap: Record<number, string> = {}
+    const salesMap: Record<number, number> = {} // showcase_id -> sale_id
+    
+    // Só buscar retornos se houver showcases
+    if (showcaseIds.length > 0) {
+      const { data: returnsData, error: returnsError } = await supabase
+        .from('showcase_returns')
+        .select('showcase_id, product_id, returned_quantity, returned_at')
+        .in('showcase_id', showcaseIds)
+        .order('returned_at', { ascending: true })
+
+      if (returnsError) {
+        console.error('Erro ao buscar retornos:', returnsError)
+        // Não falhar a operação, apenas continuar sem dados de retorno
+      }
+
+      if (returnsData) {
+        returnsData.forEach(ret => {
+          if (!returnsMap[ret.showcase_id]) {
+            returnsMap[ret.showcase_id] = []
+            // Primeiro retorno = data de finalização
+            if (ret.returned_at && !finishedAtMap[ret.showcase_id]) {
+              finishedAtMap[ret.showcase_id] = ret.returned_at
+            }
+          }
+          returnsMap[ret.showcase_id].push({ 
+            product_id: ret.product_id,
+            returned_quantity: ret.returned_quantity,
+            returned_at: ret.returned_at
+          })
+        })
+      }
+
+      // Buscar vendas registradas para estes mostruários
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select('id, showcase_id')
+        .in('showcase_id', showcaseIds)
+        .not('showcase_id', 'is', null)
+
+      if (!salesError && salesData) {
+        salesData.forEach(sale => {
+          if (sale.showcase_id) {
+            salesMap[sale.showcase_id] = sale.id
+          }
+        })
+      }
+    }
+
 
 
     // Buscar todos os distribuidores com nomes reais usando RPC function
@@ -261,11 +324,22 @@ export async function getShowcases(): Promise<ShowcaseWithDetails[]> {
     // Processar os dados para calcular totais
     const showcasesWithDetails: ShowcaseWithDetails[] = (data || []).map(showcase => {
       const movements = showcase.inventory_movements || []
-      const totalPieces = movements.reduce((sum: number, mov: any) => sum + Math.abs(mov.quantity), 0)
-      const totalValue = movements.reduce((sum: number, mov: any) => {
+      // Contar apenas as saídas (quantidade negativa = envio) para o total de peças enviadas
+      const outgoingMovements = movements.filter((mov: any) => mov.quantity < 0)
+      const totalPieces = outgoingMovements.reduce((sum: number, mov: any) => sum + Math.abs(mov.quantity), 0)
+      const totalValue = outgoingMovements.reduce((sum: number, mov: any) => {
         const jewelry = mov.jewelry
         return sum + (Math.abs(mov.quantity) * (jewelry?.selling_price || jewelry?.cost_price || 0))
       }, 0)
+
+      // Determinar status baseado em retornos usando o mapa
+      const showcaseReturns = returnsMap[showcase.id] || []
+      const hasReturns = showcaseReturns.length > 0
+      const status: 'entregue' | 'finalizado' = hasReturns ? 'finalizado' : 'entregue'
+
+      // Verificar se tem venda registrada
+      const hasSale = !!salesMap[showcase.id]
+      const saleId = salesMap[showcase.id]
 
       // Usar o nome real do distribuidor do mapa que já foi carregado
       let distributorName = 'N/A'
@@ -281,6 +355,12 @@ export async function getShowcases(): Promise<ShowcaseWithDetails[]> {
 
       return {
         ...showcase,
+        status,
+        has_returns: hasReturns,
+        has_sale: hasSale,
+        sale_id: saleId,
+        finished_at: finishedAtMap[showcase.id],
+        showcase_returns: showcaseReturns,
         distributor_profile: {
           ...showcase.distributor_profile,
           name: distributorName
@@ -320,6 +400,78 @@ export async function getShowcaseMovements(showcaseId: number) {
     return data || []
   } catch (error) {
     console.error('Erro ao buscar movimentações do showcase:', error)
+    throw error
+  }
+}
+
+export interface ShowcaseReturn {
+  product_id: number
+  returned_quantity: number
+}
+
+/**
+ * Finaliza um mostruário registrando os retornos de produtos
+ */
+export async function finishShowcase(showcaseId: number, returns: ShowcaseReturn[]): Promise<void> {
+  try {
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    // Verificar se o showcase existe
+    const { data: showcase, error: showcaseError } = await supabase
+      .from('showcase')
+      .select('id, code')
+      .eq('id', showcaseId)
+      .single()
+
+    if (showcaseError || !showcase) {
+      throw new Error('Mostruário não encontrado')
+    }
+
+    // 1. Registrar os retornos na tabela showcase_returns
+    const returnsToInsert = returns
+      .filter(ret => ret.returned_quantity > 0)
+      .map(ret => ({
+        showcase_id: showcaseId,
+        product_id: ret.product_id,
+        returned_quantity: ret.returned_quantity
+      }))
+
+    if (returnsToInsert.length > 0) {
+      const { error: returnsError } = await supabase
+        .from('showcase_returns')
+        .insert(returnsToInsert)
+
+      if (returnsError) {
+        console.error('Erro ao registrar retornos:', returnsError)
+        throw new Error(`Erro ao registrar retornos: ${returnsError.message}`)
+      }
+
+      // 2. Criar movimentações de inventário para os retornos (entrada no estoque)
+      const inventoryMovements = returnsToInsert.map(ret => ({
+        product_id: ret.product_id,
+        quantity: ret.returned_quantity, // Positivo porque é entrada no estoque
+        reason: `Retorno do mostruário ${showcase.code}`,
+        showcase_id: showcaseId
+      }))
+
+      const { error: movementsError } = await supabase
+        .from('inventory_movements')
+        .insert(inventoryMovements)
+
+      if (movementsError) {
+        console.error('Erro ao criar movimentações de retorno:', movementsError)
+        throw new Error(`Erro ao registrar movimentações de retorno: ${movementsError.message}`)
+      }
+    }
+
+    console.log(`Mostruário ${showcase.code} finalizado com sucesso`)
+  } catch (error) {
+    console.error('Erro ao finalizar showcase:', error)
     throw error
   }
 }

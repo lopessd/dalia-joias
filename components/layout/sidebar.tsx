@@ -29,7 +29,7 @@ export function Sidebar({ userType }: SidebarProps) {
 
   const revendedorNavItems = [
     //{ href: "/revendedor/dashboard", label: "Panel de Control", icon: LayoutDashboard },
-    { href: "/revendedor/vendas", label: "Ventas", icon: ShoppingCart },
+    //{ href: "/revendedor/vendas", label: "Ventas", icon: ShoppingCart },
     { href: "/revendedor/joias", label: "Joyas", icon: Gem },
     { href: "/revendedor/historico", label: "Historial", icon: History },
   ]

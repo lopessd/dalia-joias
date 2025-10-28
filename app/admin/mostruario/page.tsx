@@ -22,6 +22,7 @@ import type { ShowcaseWithDetails } from "@/lib/showcase-api"
 export default function MostruarioPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRevendedor, setSelectedRevendedor] = useState("todos")
+  const [selectedStatus, setSelectedStatus] = useState("entregues")
   const [dateFilters, setDateFilters] = useState({
     dataInicio: "",
     dataFim: "",
@@ -76,12 +77,21 @@ export default function MostruarioPage() {
       (mostruario.code?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (mostruario.distributor_profile?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     const matchesRevendedor = selectedRevendedor === "todos" || mostruario.profile_id === selectedRevendedor
-    return matchesSearch && matchesRevendedor
+    const matchesStatus = selectedStatus === "todos" || 
+                         (selectedStatus === "entregues" && mostruario.status === "entregue") ||
+                         (selectedStatus === "finalizados" && mostruario.status === "finalizado")
+    return matchesSearch && matchesRevendedor && matchesStatus
   })
 
   const totalMostruarios = mostruarios.length
   const totalPecasEnviadas = mostruarios.reduce((sum, m) => sum + (m.total_pieces || 0), 0)
   const valorTotalEnviado = mostruarios.reduce((sum, m) => sum + (m.total_value || 0), 0)
+  const totalPecasRetornadas = mostruarios
+    .filter(m => m.status === "finalizado")
+    .reduce((sum, m) => {
+      const returns = m.showcase_returns || []
+      return sum + returns.reduce((returnSum: number, ret: any) => returnSum + (ret.returned_quantity || 0), 0)
+    }, 0)
 
 
 
@@ -105,7 +115,7 @@ export default function MostruarioPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-body text-muted-foreground">Total de Muestrarios</CardTitle>
@@ -139,7 +149,16 @@ export default function MostruarioPage() {
               </CardContent>
             </Card>
 
-
+            <Card className="border-border">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-body text-muted-foreground">Piezas Retornadas</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-heading text-foreground">{totalPecasRetornadas.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground font-body">piezas devueltas</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Filters */}
@@ -151,7 +170,7 @@ export default function MostruarioPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="search" className="font-body">
                     Buscar
@@ -180,6 +199,19 @@ export default function MostruarioPage() {
                           {revendedor.name || revendedor.email.split('@')[0]}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-body">Status</Label>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="font-body">
+                      <SelectValue placeholder="Seleccione un status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos los status</SelectItem>
+                      <SelectItem value="entregues">Entregues</SelectItem>
+                      <SelectItem value="finalizados">Finalizados</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,6 +256,7 @@ export default function MostruarioPage() {
                   onClick={() => {
                     setSearchTerm("")
                     setSelectedRevendedor("todos")
+                    setSelectedStatus("todos")
                     setDateFilters({ dataInicio: "", dataFim: "" })
                   }}
                   className="font-body"
@@ -246,7 +279,11 @@ export default function MostruarioPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredMostruarios.map((mostruario) => (
-                  <MostruarioCard key={mostruario.id} mostruario={mostruario} />
+                  <MostruarioCard 
+                    key={mostruario.id} 
+                    mostruario={mostruario}
+                    onShowcaseFinished={loadShowcases}
+                  />
                 ))}
               </div>
 

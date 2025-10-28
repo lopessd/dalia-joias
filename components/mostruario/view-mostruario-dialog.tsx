@@ -17,7 +17,8 @@ interface ViewMostruarioDialogProps {
 export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMostruarioDialogProps) {
   const { profileData } = useUserProfile()
   
-
+  // Filtrar apenas movimentos de saída (negativos)
+  const outgoingMovements = (mostruario.inventory_movements || []).filter(m => m.quantity < 0)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-PY")
@@ -85,33 +86,32 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
           <div className="grid grid-cols-3 gap-3">
             <Card className="border-border">
               <CardContent className="px-3 py-4 text-center">
-                <Package className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                <Package className="w-6 h-6 text-blue-500 mx-auto mb-2" />
                 <p className="text-xl font-heading text-foreground">
-                  {mostruario.inventory_movements?.reduce((sum, mov) => sum + Math.abs(mov.quantity), 0) || 0}
+                  {outgoingMovements.reduce((sum, mov) => sum + Math.abs(mov.quantity), 0)}
                 </p>
-                <p className="text-xs text-muted-foreground font-body">Total de Piezas</p>
+                <p className="text-xs text-muted-foreground font-body">Piezas Enviadas</p>
               </CardContent>
             </Card>
 
             <Card className="border-border">
               <CardContent className="px-3 py-4 text-center">
-                <Package className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xl font-heading text-foreground">{mostruario.inventory_movements?.length || 0}</p>
-                <p className="text-xs text-muted-foreground font-body">Productos Diferentes</p>
+                <Package className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                <p className="text-xl font-heading text-foreground">
+                  {mostruario.showcase_returns?.reduce((sum, ret) => sum + ret.returned_quantity, 0) || 0}
+                </p>
+                <p className="text-xs text-muted-foreground font-body">Piezas Devueltas</p>
               </CardContent>
             </Card>
 
             <Card className="border-border">
               <CardContent className="px-3 py-4 text-center">
-                <DollarSign className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-                <p className="text-lg font-heading text-foreground leading-tight">
-                  {formatCurrency(
-                    mostruario.inventory_movements?.reduce((sum, mov) => 
-                      sum + (Math.abs(mov.quantity) * (mov.jewelry?.selling_price || mov.jewelry?.cost_price || 0)), 0
-                    ) || 0
-                  )}
+                <DollarSign className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                <p className="text-xl font-heading text-foreground">
+                  {outgoingMovements.reduce((sum, mov) => sum + Math.abs(mov.quantity), 0) - 
+                   (mostruario.showcase_returns?.reduce((sum, ret) => sum + ret.returned_quantity, 0) || 0)}
                 </p>
-                <p className="text-xs text-muted-foreground font-body">Valor Total</p>
+                <p className="text-xs text-muted-foreground font-body">Piezas Vendidas</p>
               </CardContent>
             </Card>
           </div>
@@ -123,43 +123,61 @@ export function ViewMostruarioDialog({ open, onOpenChange, mostruario }: ViewMos
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mostruario.inventory_movements?.length === 0 ? (
+                {outgoingMovements.length === 0 ? (
                   <div className="text-center py-8">
                     <Package className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-muted-foreground font-body">No hay productos en esta vitrina</p>
                   </div>
                 ) : (
-                  mostruario.inventory_movements?.map((movement, index) => (
-                    <div
-                      key={movement.id || index}
-                      className="flex justify-between items-center p-3 bg-muted rounded-lg border border-border"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-heading text-foreground">{movement.jewelry?.name || 'Producto sin nombre'}</h4>
-                        <p className="text-sm text-muted-foreground font-body">Código: {movement.jewelry?.code || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground font-body">
-                          Precio unitario: {formatCurrency(movement.jewelry?.selling_price || movement.jewelry?.cost_price || 0)}
-                        </p>
+                  outgoingMovements.map((movement, index) => {
+                    const productId = movement.jewelry?.id
+                    const returnedQty = productId 
+                      ? mostruario.showcase_returns?.find(
+                          ret => ret.product_id === parseInt(productId)
+                        )?.returned_quantity || 0
+                      : 0
+                    const sentQty = Math.abs(movement.quantity || 0)
+                    const soldQty = sentQty - returnedQty
+
+                    return (
+                      <div
+                        key={movement.id || index}
+                        className="flex justify-between items-start p-3 bg-muted rounded-lg border border-border"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-heading text-foreground">{movement.jewelry?.name || 'Producto sin nombre'}</h4>
+                          <p className="text-sm text-muted-foreground font-body">Código: {movement.jewelry?.code || 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground font-body">
+                            Precio unitario: {formatCurrency(movement.jewelry?.selling_price || movement.jewelry?.cost_price || 0)}
+                          </p>
+                          {mostruario.status === 'finalizado' && (
+                            <div className="mt-2 flex gap-3 text-xs font-body">
+                              <span className="text-blue-600">Enviado: {sentQty}</span>
+                              <span className="text-green-600">Devuelto: {returnedQty}</span>
+                              <span className="text-amber-600">Vendido: {soldQty}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-heading text-foreground">{sentQty}x</p>
+                          <p className="text-sm font-heading text-foreground">
+                            {formatCurrency(sentQty * (movement.jewelry?.selling_price || movement.jewelry?.cost_price || 0))}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-heading text-foreground">-{Math.abs(movement.quantity || 0)}x</p>
-                        <p className="text-sm font-heading text-foreground">
-                          {formatCurrency(Math.abs(movement.quantity || 0) * (movement.jewelry?.selling_price || movement.jewelry?.cost_price || 0))}
-                        </p>
-                      </div>
-                    </div>
-                  )) || []
+                    )
+                  })
                 )}
               </div>
 
               {/* Total */}
-              {mostruario.inventory_movements && mostruario.inventory_movements.length > 0 && (
+              {outgoingMovements.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-border">
                   <div className="flex justify-between items-center">
-                    <p className="text-lg font-heading text-foreground">Total General:</p>
+                    <p className="text-lg font-heading text-foreground">Valor Total Enviado:</p>
                     <p className="text-xl font-heading text-primary">
                       {formatCurrency(
-                        mostruario.inventory_movements.reduce((sum, mov) => 
+                        outgoingMovements.reduce((sum, mov) => 
                           sum + (Math.abs(mov.quantity) * (mov.jewelry?.selling_price || mov.jewelry?.cost_price || 0)), 0
                         )
                       )}

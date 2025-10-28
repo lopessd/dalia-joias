@@ -4,6 +4,7 @@ export interface ShowcaseHistoryItem {
   id: number
   code: string
   created_at: string
+  status: 'entregue' | 'finalizado'
   products: {
     product_id: number
     product_name: string
@@ -51,6 +52,7 @@ export async function getShowcaseHistory(
         id,
         code,
         created_at,
+        showcase_returns(id),
         inventory_movements(
           product_id,
           quantity,
@@ -121,11 +123,16 @@ export async function getShowcaseHistory(
         const total_value = products.reduce((sum: number, product: any) => {
           return sum + (product.quantity * (product.selling_price || 0))
         }, 0)
+
+        // Determinar status baseado em retornos
+        const hasReturns = (showcase.showcase_returns || []).length > 0
+        const status: 'entregue' | 'finalizado' = hasReturns ? 'finalizado' : 'entregue'
       
         return {
           id: showcase.id,
           code: showcase.code,
           created_at: showcase.created_at,
+          status,
           products,
           total_pieces,
           total_products,
@@ -133,6 +140,7 @@ export async function getShowcaseHistory(
         }
       })
       .filter((showcase: ShowcaseHistoryItem) => showcase.products.length > 0) // Só retornar showcases com produtos
+      .filter((showcase: ShowcaseHistoryItem) => showcase.status === 'entregue') // Só mostrar mostruários ativos (não finalizados)
     
     console.log('✅ Histórico processado:', processedHistory)
     return processedHistory

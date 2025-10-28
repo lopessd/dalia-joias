@@ -25,7 +25,6 @@ interface Joia {
   nome: string
   categoria: string
   descricao: string
-  precoCusto: number
   precoVenda: number
   quantidade: number
   fotos: string[]
